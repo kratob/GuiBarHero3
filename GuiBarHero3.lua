@@ -875,12 +875,7 @@ function Bar:UpdateSelfbuff(event_type, unit)
 	self = self.owner
 	if unit and unit ~= "player" then return end
 	local name, expires
-	for index = 1,41 do
-		name, _, _, _, _, _, expires = UnitBuff("player", index)
-		if (not name) or name == self.spell_name then 
-			break 
-		end
-	end
+	name, _, _, _, _, _, expires = UnitBuff("player", self.spell_name)
 
 	if (not name) then
 		if not tonumber(self.next_note) or self.next_note > GetTime() + EPS.time then
@@ -1028,12 +1023,7 @@ function Bar:Draw()
 		dimmed = true
 	end
 	if self.spell_info.need_aura then
-		for index = 1,41 do
-			name, _, _, _, _, _, expires = UnitBuff("player", index)
-			if (not name) or name == self.spell_info.need_aura then 
-				break 
-			end
-		end
+		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.need_aura)
 		if (not name) then
 			dimmed = true
 		end
