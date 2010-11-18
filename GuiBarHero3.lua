@@ -431,7 +431,7 @@ function MainFrame:Create()
 	left_frame:SetPoint("TOPLEFT", - LAYOUT.icon.dist - LAYOUT.icon.width,
 							- LAYOUT.main.border - LAYOUT.bar.skip + (LAYOUT.icon.height - LAYOUT.bar.height)/2) 
 	left_frame:SetPoint("BOTTOMLEFT", - LAYOUT.icon.dist - LAYOUT.icon.width,
-							LAYOUT.main.border - (LAYOUT.icon.height + LAYOUT.bar.height)/2)
+							LAYOUT.main.border + LAYOUT.bar.skip - (LAYOUT.icon.height - LAYOUT.bar.height)/2)
 	left_frame:EnableMouse(1)
 	left_frame:SetScript("OnMouseDown", MainFrame.BarClick)
 	main_frame.left_frame = left_frame
@@ -512,7 +512,8 @@ function MainFrame:BarClick(button)
 	elseif profiles then
 		nr = math.ceil(rel_x * LAYOUT.profile.max)
 	else
-		nr = math.ceil((1-rel_y) * (#self.current_bars + 1))
+		nr = math.ceil((1-rel_y) * (#self.current_bars))
+		insert_nr = math.ceil((1-rel_y) * (#self.current_bars) + 0.5)
 	end
 	local info_type, id, link = GetCursorInfo()
 	if profiles then
@@ -535,7 +536,7 @@ function MainFrame:BarClick(button)
 				end
 			end
 			if name then
-				GuiBarHero:InsertBar(nr, name, icons)
+				GuiBarHero:InsertBar(insert_nr, name, icons)
 			end
 		elseif button == "RightButton" and IsShiftKeyDown() then
 			GuiBarHero:InsertBar(nr, nil, icons)
