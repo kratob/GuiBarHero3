@@ -1,0 +1,14 @@
+## Interface: 40000
+## Title: GuiBarHero3
+## Notes: Visualize cooldowns and buff durations Guitar-Hero-style.
+## Author: TK
+## Version: 0.1
+## OptionalDeps: Ace3
+## SavedVariables: GuiBarHero3DB
+## X-Category: Interface Enhancements
+
+#@no-lib-strip@
+embeds.xml
+#@end-no-lib-strip@
+
+GuiBarHero3.lua
