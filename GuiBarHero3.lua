@@ -3,11 +3,11 @@ local EPS = { time = 0.1 }
 local DEBUG = { bars_created = 0, textures_created = 0 }
 
 local LAYOUT = { 
-	main = { border = 4 },
+	main = { border = 4, alpha = 0.8 },
 	bar = { height = 16, width = 372, skip = 7, max = 20, dim_alpha = 0.4, speed = 30 }, 
 	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7 },
 	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 10, alpha = 1, dim_alpha = 0.2 },
-	profile = { height = 30, width = 30, dist = 4, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
+	profile = { height = 20, width = 30, dist = 2, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
 	chord = { height = 8, width = 64, alpha = .7, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Horizontal" },
 	right_note = { height = 16, width = 16, offset = 0, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Rightarrow" },
 	left_note = { height = 16, width = 16, offset = -16, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Leftarrow" },
@@ -63,7 +63,7 @@ local TEMPLATE = {
 	end,
 	melee = function(rage) return {
 		type = "COOLDOWN",
-		note = "CENTER",
+		note = "RIGHT",
 		color = { 1, 1, 1 },
 		highlight_color = { 1, 0, 0 },
 		need_target = true,
@@ -104,7 +104,8 @@ local SPELLS = {
 			type = "COOLDOWN",
 			note = "RIGHT",
 			color = { 1, .5, 0 },
-			can_dim = true
+			can_dim = true,
+			max_rage = 70,
 		}
 	},
 	["Commanding Shout"] = TEMPLATE.self_buff,
@@ -139,6 +140,7 @@ local SPELLS = {
 		color = { 1, .5, 0 },
 		can_dim = false,
 		need_target = true,
+		need_boss = true,
 	},
 	["Rampage"] = {
 		type = "SELFBUFF",
@@ -166,7 +168,8 @@ local SPELLS = {
 			note = "RIGHT",
 			color = { 1, .5, 0 },
 			can_dim = true,
-			need_aura = "Bloodsurge"
+			need_aura = "Bloodsurge",
+			min_rage = 75,
 		},
 		{
 			type = "REACTIVE",
@@ -179,8 +182,22 @@ local SPELLS = {
 	["Hamstring"] = TEMPLATE.debuff(),
 	["Thunder Clap"] = { TEMPLATE.debuff(nil, {["Frost Fever"] = true}), TEMPLATE.instant_aoe },
 	["Sunder Armor"] = TEMPLATE.debuff(5),
-	["Heroic Strike"] = TEMPLATE.melee(55),
+	["Heroic Strike"] = TEMPLATE.melee(0),
 	["Cleave"] = TEMPLATE.melee(55),
+	["Raging Blow"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 1, 0, 0 },
+		need_target = true,
+		can_dim = true,
+		need_enraged = true,
+	},
+	["Blood Fury"] = { 
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 0.5, 0.5, 1 },
+		can_dim = true,
+	},
 	["Trinket 1"] = TEMPLATE.slot_item("Trinket0Slot"),
 	["Trinket 2"] = TEMPLATE.slot_item("Trinket1Slot"),
 }
@@ -422,7 +439,7 @@ function MainFrame:Create()
 		edgeSize = 16,
 		insets = {left = LAYOUT.main.border, right = 4, top = 4, bottom = 4}
 	})
-	frame:SetBackdropColor(0,0,0,1)
+	frame:SetBackdropColor(0,0,0,LAYOUT.main.alpha)
 	main_frame.frame = frame
 
 	local left_frame = CreateFrame("Frame", "LeftIconFrame", frame)
@@ -509,6 +526,7 @@ function MainFrame:BarClick(button)
 	local nr
 	if icons then
 		nr = math.ceil(rel_x * LAYOUT.large_icon.max)
+		insert_nr = nr
 	elseif profiles then
 		nr = math.ceil(rel_x * LAYOUT.profile.max)
 	else
@@ -1016,10 +1034,14 @@ end
 function Bar:Draw()
 	local time = GetTime()
 	local dimmed = false
+	local hidden = false
 	if self.spell_info.can_dim and ((not IsUsableSpell(self.spell_name)) or (SpellHasRange(self.spell_name) and IsSpellInRange(self.spell_name, "target") == 0)) then
 		dimmed = true
 	end
 	if self.spell_info.min_rage and UnitMana("player") < self.spell_info.min_rage then
+		dimmed = true
+	end
+	if self.spell_info.max_rage and UnitMana("player") > self.spell_info.max_rage then
 		dimmed = true
 	end
 	if self.spell_info.need_aura then
@@ -1028,11 +1050,17 @@ function Bar:Draw()
 			dimmed = true
 		end
 	end
+	if self.spell_info.need_enraged then
+		usable, nomana = IsUsableSpell(self.spell_name)
+		if (not usable) and (not nomana) then
+			hidden = true
+		end
+	end
 	if self.icon_only then
-		dimmed = dimmed or (not self.icon_lit) or self.icon_lit > time
+		dimmed = dimmed or (not self.icon_lit) or self.icon_lit > time or hidden
 		self.icon_tex:SetVertexColor(1, 1, 1, dimmed and LAYOUT.large_icon.dim_alpha or LAYOUT.large_icon.alpha )
 	else
-		if not self.next_note then
+		if (not self.next_note) or hidden then
 			self:DrawEmpty()
 		elseif self.next_note == "?" then
 			self:DrawUnknown()
