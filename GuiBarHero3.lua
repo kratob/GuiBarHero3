@@ -81,7 +81,13 @@ local TEMPLATE = {
 local GCD_SPELL = "Slam"
 
 local SPELLS = {
-	["Bloodthirst"] = TEMPLATE.instant_attack,
+	["Bloodthirst"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 1, 0, 0 },
+		need_target = true,
+		can_dim = true,
+	},
 	["Whirlwind"] = TEMPLATE.instant_attack,
 	["Execute"] = TEMPLATE.reactive,
 	["Overpower"] = TEMPLATE.reactive,
@@ -182,7 +188,7 @@ local SPELLS = {
 	["Hamstring"] = TEMPLATE.debuff(),
 	["Thunder Clap"] = { TEMPLATE.debuff(nil, {["Frost Fever"] = true}), TEMPLATE.instant_aoe },
 	["Sunder Armor"] = TEMPLATE.debuff(5),
-	["Heroic Strike"] = TEMPLATE.melee(0),
+	["Heroic Strike"] = TEMPLATE.melee(55),
 	["Cleave"] = TEMPLATE.melee(55),
 	["Raging Blow"] = {
 		type = "COOLDOWN",
