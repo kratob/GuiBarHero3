@@ -65,7 +65,6 @@ local TEMPLATE = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 1, 1, 1 },
-		highlight_color = { 1, 0, 0 },
 		need_target = true,
 		can_dim = true,
 		min_rage = rage,
@@ -712,7 +711,7 @@ function Bar:Create(parent, icon_only)
 	bar.icon_frame = icon_frame
 	
 	bar.tex_pool = {}
-	bar.note_texs = {}
+	bar.note_tex = nil
 	local tex = icon_frame:CreateTexture("GuiBarTex")
 	DEBUG.textures_created = DEBUG.textures_created + 1
 	tex:Hide()
@@ -724,7 +723,6 @@ function Bar:Create(parent, icon_only)
 
 	bar.note_type = LAYOUT.center_note
 	bar.next_note = 0
-	bar.highlight_note = {false, false}
 	bar.spell_info = TEMPLATE.none
 	bar.GUID = UnitGUID("player")
 
@@ -769,35 +767,17 @@ function Bar:CreateTextures()
 		self.note_offset = self.note_type.offset * scale
 		self.note_width = self.note_type.width * scale
 
-		local nr_notes
-		if self.melee then
-			nr_notes = 4 
-		else
-			nr_notes = 1
-		end
-		while #self.note_texs > nr_notes do
-			self:ReleaseTex(table.remove(self.note_texs))
-		end
-		while #self.note_texs < nr_notes do
-			table.insert(self.note_texs, self:AquireTex())
+		if not self.note_tex then
+			self.note_tex = self:AquireTex()
 		end
 
-		for i,tex in ipairs(self.note_texs) do
-			tex:SetTexture(self.note_type.path, true)
-			tex:SetBlendMode("ADD")
-			if i % 2 == 1 then
-				tex:SetVertexColor(unpack(self.spell_info.color))
-			else
-				tex:SetVertexColor(unpack(self.spell_info.highlight_color))
-			end
-			tex:SetDrawLayer("OVERLAY")
-			tex:SetHeight(self.height)
-			tex:SetWidth(self.note_width)
-			-- tex:SetTexCoordModifiesRect(1)
-		end
-		if nr_notes % 2 == 1 then
-			table.insert(self.note_texs, self:AquireTex())
-		end
+		tex = self.note_tex
+		tex:SetTexture(self.note_type.path, true)
+		tex:SetBlendMode("ADD")
+		tex:SetVertexColor(unpack(self.spell_info.color))
+		tex:SetDrawLayer("OVERLAY")
+		tex:SetHeight(self.height)
+		tex:SetWidth(self.note_width)
 	end
 
 	self:UpdateIcon()
@@ -1021,8 +1001,6 @@ function Bar:Swing(this_swing, next_swing, special)
 	end
 	self.last_swing_exact = this_swing
 	self.next_swing = next_swing
-	self.highlight_next_swing = false
-	self.highlight_last_swing = special
 end
 
 function Bar:UpdateNextSwing(next_swing)
@@ -1081,7 +1059,7 @@ function Bar:Draw()
 				x2 = (bar_end - time) * self.speed + LAYOUT.bridge.x
 			end
 			self:DrawChord(x > 0 and x or 0, x2, dimmed)
-			self:DrawNotes({x}, {false}, dimmed)
+			self:DrawNote(x, false, dimmed)
 		end
 	end
 end
@@ -1090,8 +1068,8 @@ function Bar:DrawEmpty()
 	if self.chord_tex then
 		self.chord_tex:Hide()
 	end
-	for _, tex in ipairs(self.note_texs) do
-		tex:Hide()
+	if self.note_tex then
+		self.note_tex:Hide()
 	end
 end
 
@@ -1121,43 +1099,32 @@ function Bar:DrawChord(start, stop, dimmed)
 	end
 end
 
-function Bar:DrawNotes(notes, highlights, dimmed)
+function Bar:DrawNote(note, dimmed)
 	local r,g,b = unpack(self.spell_info.color)
 	local alpha = 1
 	if dimmed then alpha = LAYOUT.bar.dim_alpha end
-	for i = 1,#notes do
-		local offset = notes[i] + self.note_offset
-		local qleft, qright, tex
-		if highlights[i] then
-			self.note_texs[i + i - 1]:Hide()
-			tex = self.note_texs[i + i]
-		else
-			self.note_texs[i + i]:Hide()
-			tex = self.note_texs[i + i - 1]
-		end
-		if offset < 0 then
-			qleft = - offset / self.note_width
-			tex:SetPoint("TOPLEFT", 0, 0)
-		else
-			qleft = 0
-			tex:SetPoint("TOPLEFT", offset, 0)
-		end
-		if offset + self.note_width > self.width then
-			qright = 1 - (offset + self.note_width - self.width) / self.note_width
-		else
-			qright = 1
-		end
-		if qleft >= qright then
-			tex:Hide()
-		else
-			tex:SetTexCoord(qleft, qright, 0, 1)
-			tex:SetWidth((qright - qleft) * self.note_width)
-			tex:SetVertexColor(r,g,b,alpha)
-			tex:Show()
-		end
+	local offset = note + self.note_offset
+	local qleft, qright, tex
+	tex = self.note_tex
+	if offset < 0 then
+		qleft = - offset / self.note_width
+		tex:SetPoint("TOPLEFT", 0, 0)
+	else
+		qleft = 0
+		tex:SetPoint("TOPLEFT", offset, 0)
 	end
-	for i = (2 * #notes + 1), #self.note_texs do
-		self.note_texs[i]:Hide()
+	if offset + self.note_width > self.width then
+		qright = 1 - (offset + self.note_width - self.width) / self.note_width
+	else
+		qright = 1
+	end
+	if qleft >= qright then
+		tex:Hide()
+	else
+		tex:SetTexCoord(qleft, qright, 0, 1)
+		tex:SetWidth((qright - qleft) * self.note_width)
+		tex:SetVertexColor(r,g,b,alpha)
+		tex:Show()
 	end
 end
 
