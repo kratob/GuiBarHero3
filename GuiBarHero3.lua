@@ -79,6 +79,7 @@ local TEMPLATE = {
 }
 
 local GCD_SPELL = "Slam"
+local ENRAGE_AURAS = {"Berserker Rage", "Death Wish", "Enrage"}
 
 local SPELLS = {
 	["Bloodthirst"] = {
@@ -175,7 +176,6 @@ local SPELLS = {
 			color = { 1, .5, 0 },
 			can_dim = true,
 			need_aura = "Bloodsurge",
-			min_rage = 75,
 		},
 		{
 			type = "REACTIVE",
@@ -1041,6 +1041,7 @@ function Bar:Draw()
 	local time = GetTime()
 	local dimmed = false
 	local hidden = false
+	local bar_end = nil
 	if self.spell_info.can_dim and ((not IsUsableSpell(self.spell_name)) or (SpellHasRange(self.spell_name) and IsSpellInRange(self.spell_name, "target") == 0)) then
 		dimmed = true
 	end
@@ -1057,22 +1058,29 @@ function Bar:Draw()
 		end
 	end
 	if self.spell_info.need_enraged then
-		usable, nomana = IsUsableSpell(self.spell_name)
-		if (not usable) and (not nomana) then
-			hidden = true
+		bar_end = 0
+		for _, aura in ipairs(ENRAGE_AURAS) do
+			name, _, _, _, _, _, expires = UnitBuff("player", aura)
+			if name and bar_end < expires then
+				bar_end = expires
+			end
 		end
 	end
 	if self.icon_only then
 		dimmed = dimmed or (not self.icon_lit) or self.icon_lit > time or hidden
 		self.icon_tex:SetVertexColor(1, 1, 1, dimmed and LAYOUT.large_icon.dim_alpha or LAYOUT.large_icon.alpha )
 	else
-		if (not self.next_note) or hidden then
+		if (not self.next_note) or hidden or (bar_end and (bar_end < self.next_note)) then
 			self:DrawEmpty()
 		elseif self.next_note == "?" then
 			self:DrawUnknown()
 		else
 			local x = (self.next_note - time) * self.speed + LAYOUT.bridge.x
-			self:DrawChord(x > 0 and x or 0, dimmed)
+			local x2 = nil
+			if bar_end then
+				x2 = (bar_end - time) * self.speed + LAYOUT.bridge.x
+			end
+			self:DrawChord(x > 0 and x or 0, x2, dimmed)
 			self:DrawNotes({x}, {false}, dimmed)
 		end
 	end
@@ -1091,18 +1099,21 @@ function Bar:DrawUnknown()
 	self:DrawEmpty()
 end
 
-function Bar:DrawChord(start, dimmed)
+function Bar:DrawChord(start, stop, dimmed)
 	local r,g,b = unpack(self.spell_info.color)
 	local alpha = LAYOUT.chord.alpha
 	if dimmed then alpha = alpha * LAYOUT.bar.dim_alpha end
 	local w = self.chord_width
 	local offset = (GetTime() * self.speed) % w
-	local visible_width = self.width - start
+	if (not stop) or stop > self.width then
+		stop = self.width
+	end
+	local visible_width = stop - start
 	local tex = self.chord_tex
 	if visible_width > 0 then
 		tex:SetPoint("TOPLEFT", start, 0)
 		tex:SetWidth(visible_width)
-		tex:SetTexCoord((start + offset) / w, (self.width + offset) / w, 0, 1)
+		tex:SetTexCoord((start + offset) / w, (stop + offset) / w, 0, 1)
 		tex:SetVertexColor(r,g,b,alpha)
 		tex:Show()
 	else
