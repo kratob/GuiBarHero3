@@ -183,9 +183,9 @@ local SPELLS = {
 			can_dim = true,
 		},
 	},
-	["Demoralizing Shout"] = TEMPLATE.debuff(nil, {["Demoralizing Roar"] = true}),
+	["Demoralizing Shout"] = TEMPLATE.debuff(nil, {"Demoralizing Roar"}),
 	["Hamstring"] = TEMPLATE.debuff(),
-	["Thunder Clap"] = { TEMPLATE.debuff(nil, {["Frost Fever"] = true}), TEMPLATE.instant_aoe },
+	["Thunder Clap"] = { TEMPLATE.debuff(nil, {"Frost Fever"}), TEMPLATE.instant_aoe },
 	["Sunder Armor"] = TEMPLATE.debuff(5),
 	["Heroic Strike"] = TEMPLATE.melee(55),
 	["Cleave"] = TEMPLATE.melee(55),
@@ -906,19 +906,33 @@ function Bar:UpdateDebuff(event, unit)
 		return
 	end
 	local name, count, expires
+	local latest_expire = 0
 	local found = false
-	for index = 1,100 do
-		name, _, _, count, _, _, expires = UnitDebuff("target", index)
-		if (name == self.spell_name and ((not count) or count >= self.spell_info.stacks)) 
-			or self.spell_info.shared_debuffs[name] then
+	name, _, _, count, _, _, expires = UnitDebuff("target", self.spell_name)
+	if (name and ((not count) or count >= self.spell_info.stacks)) then
+		found = true
+		if expires then
+			latest_expire = expires
+		end
+	end
+	for _, shared_debuff in ipairs(self.spell_info.shared_debuffs) do
+		name, _, _, _, _, _, expires = UnitDebuff("target", shared_debuff)
+		if name then
 			found = true
-			if expires and (not tonumber(self.next_note) or self.next_note < expires) then
-				self.next_note = expires
-				self.icon_lit = self.next_note
-			else
-				self.next_note = "?"
-				self.icon_lit = nil
+			if expires and expires > latest_expire then
+				latest_expire = expires
 			end
+		end
+	end
+	if found then
+		if latest_expire > 0 then
+			if (not tonumber(self.next_note) or self.next_note < latest_expire) then
+				self.next_note = latest_expire
+				self.icon_lit = self.next_note
+			end
+		else
+			self.next_note = "?"
+			self.icon_lit = nil
 		end
 	end
 
