@@ -27,7 +27,7 @@ local TEMPLATE = {
 		color = { 0, 0, 1 },
 		can_dim = true,
 	},
-	instant_attack = {
+	attack = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 1, 0, 0 },
@@ -51,6 +51,13 @@ local TEMPLATE = {
 		note = "CENTER",
 		color = { 1, 1, 0 },
 		can_dim = true,
+	},
+	dot = {
+		type = "DEBUFF",
+		note = "CENTER",
+		color = {1, 0.3, 0},
+		can_dim = true,
+		subtract_cast_time = true,
 	},
 	debuff = function(count, shared) 
 		return { type = "DEBUFF",
@@ -77,7 +84,7 @@ local TEMPLATE = {
 	end,
 }
 
-local GCD_SPELL = "Slam"
+local GCD_SPELLS = {"Slam", "Shadow Bolt"}
 local ENRAGE_AURAS = {"Berserker Rage", "Death Wish", "Enrage"}
 
 local SPELLS = {
@@ -88,11 +95,11 @@ local SPELLS = {
 		need_target = true,
 		can_dim = true,
 	},
-	["Whirlwind"] = TEMPLATE.instant_attack,
+	["Whirlwind"] = TEMPLATE.attack,
 	["Execute"] = TEMPLATE.reactive,
 	["Overpower"] = TEMPLATE.reactive,
 	["Mortal Strike"] = {
-		TEMPLATE.instant_attack,
+		TEMPLATE.attack,
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
@@ -103,7 +110,7 @@ local SPELLS = {
 		},
 	},
 
-	["Victory Rush"] = TEMPLATE.instant_attack,
+	["Victory Rush"] = TEMPLATE.attack,
 	["Battle Shout"] = {
 		TEMPLATE.self_buff,
 		{
@@ -115,12 +122,12 @@ local SPELLS = {
 		}
 	},
 	["Commanding Shout"] = TEMPLATE.self_buff,
-	["Devastate"] = TEMPLATE.instant_attack,
-	["Revenge"] = TEMPLATE.instant_attack,
-	["Shield Slam"] = TEMPLATE.instant_attack,
-	["Bladestorm"] = TEMPLATE.instant_attack,
+	["Devastate"] = TEMPLATE.attack,
+	["Revenge"] = TEMPLATE.attack,
+	["Shield Slam"] = TEMPLATE.attack,
+	["Bladestorm"] = TEMPLATE.attack,
 	["Shockwave"] = TEMPLATE.instant_aoe,
-	["Concussion Blow"] = TEMPLATE.instant_attack,
+	["Concussion Blow"] = TEMPLATE.attack,
 	["Sweeping Strikes"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
@@ -203,6 +210,13 @@ local SPELLS = {
 		color = { 0.5, 0.5, 1 },
 		can_dim = true,
 	},
+
+	["Shadow Bolt"] = TEMPLATE.attack,
+	["Immolate"] = TEMPLATE.dot,
+	["Corruption"] = TEMPLATE.dot,
+	["Bane of Agony"] = TEMPLATE.dot,
+	["Conflagrate"] = TEMPLATE.attack,
+
 	["Trinket 1"] = TEMPLATE.slot_item("Trinket0Slot"),
 	["Trinket 2"] = TEMPLATE.slot_item("Trinket1Slot"),
 }
@@ -507,7 +521,13 @@ function MainFrame:Create()
 	gcd_frame.tex = tex
 	main_frame.next_gcd = 0
 	main_frame.gcd_frame = gcd_frame
-	main_frame.gcd_slot = GuiBarHero:FindSpell(GCD_SPELL)
+	for _, gcd_spell in ipairs(GCD_SPELLS) do
+		local spell = GuiBarHero:FindSpell(gcd_spell)
+		if spell then
+			main_frame.gcd_slot = spell
+			break
+		end
+	end
 
 	main_frame.current_bars = {}
 	main_frame.current_icons = {}
@@ -909,22 +929,28 @@ function Bar:UpdateDebuff(event, unit)
 	local latest_expire = 0
 	local found = false
 	name, _, _, count, _, _, expires = UnitDebuff("target", self.spell_name)
-	if (name and ((not count) or count >= self.spell_info.stacks)) then
+	if (name and ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks)) then
 		found = true
 		if expires then
 			latest_expire = expires
 		end
 	end
-	for _, shared_debuff in ipairs(self.spell_info.shared_debuffs) do
-		name, _, _, _, _, _, expires = UnitDebuff("target", shared_debuff)
-		if name then
-			found = true
-			if expires and expires > latest_expire then
-				latest_expire = expires
+	if self.spell_info.shared_debuffs then
+		for _, shared_debuff in ipairs(self.spell_info.shared_debuffs) do
+			name, _, _, _, _, _, expires = UnitDebuff("target", shared_debuff)
+			if name then
+				found = true
+				if expires and expires > latest_expire then
+					latest_expire = expires
+				end
 			end
 		end
 	end
 	if found then
+		if self.spell_info.subtract_cast_time then
+			local _, _, _, _, _, _, castTime = GetSpellInfo(self.spell_name)
+			latest_expire = latest_expire - castTime / 1000
+		end
 		if latest_expire > 0 then
 			if (not tonumber(self.next_note) or self.next_note < latest_expire) then
 				self.next_note = latest_expire
@@ -942,7 +968,7 @@ function Bar:UpdateDebuff(event, unit)
 	end
 end
 
-Bar.update_cooldown_events = { "SPELL_UPDATE_COOLDOWN", "PLAYER_TARGET_CHANGED" }
+Bar.update_cooldown_events = { "SPELL_UPDATE_COOLDOWN", "PLAYER_TARGET_CHANGED", "CURRENT_SPELL_CAST_CHANGED" }
 
 function Bar:UpdateCooldown()
 	self = self.owner
@@ -964,6 +990,10 @@ function Bar:UpdateCooldown()
 		self.next_note = start + duration
 	elseif duration > 0 and self.next_note > start + duration + EPS.time then
 		self.next_note = start + duration
+	end
+	local spell, _, _, _, _, endTime = UnitCastingInfo("player")
+	if endTime and endTime > self.next_note * 1000 then
+		self.next_note = endTime / 1000
 	end
 	self.icon_lit = self.next_note
 end
