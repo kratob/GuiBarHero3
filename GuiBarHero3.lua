@@ -4,9 +4,9 @@ local DEBUG = { bars_created = 0, textures_created = 0 }
 
 local LAYOUT = { 
 	main = { border = 4, alpha = 0.8 },
-	bar = { height = 16, width = 372, skip = 7, max = 20, dim_alpha = 0.4, speed = 30 }, 
+	bar = { height = 16, width = 410, skip = 7, max = 20, dim_alpha = 0.4, speed = 30 }, 
 	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7 },
-	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 10, alpha = 1, dim_alpha = 0.2 },
+	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 11, alpha = 1, dim_alpha = 0.2 },
 	profile = { height = 20, width = 30, dist = 2, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
 	chord = { height = 8, width = 64, alpha = .7, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Horizontal" },
 	right_note = { height = 16, width = 16, offset = 0, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Rightarrow" },
@@ -84,7 +84,7 @@ local TEMPLATE = {
 	end,
 }
 
-local GCD_SPELLS = {"Slam", "Shadow Bolt"}
+local GCD_SPELLS = {"Wild Strike", "Shadow Bolt"}
 local ENRAGE_AURAS = {"Berserker Rage", "Death Wish", "Enrage"}
 
 local SPELLS = {
@@ -134,7 +134,7 @@ local SPELLS = {
 		color = { 1, .5, 0 },
 		can_dim = true
 	},
-	["Death Wish"] = {
+	["Deadly Calm"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 1, .5, 0 },
@@ -175,26 +175,21 @@ local SPELLS = {
 		color = { 1, .5, 0 },
 		can_dim = true
 	},
-	["Slam"] = {
+	["Wild Strike"] = {
 		{
 			type = "REACTIVE",
 			note = "RIGHT",
-			color = { 1, .5, 0 },
+			color = { 1, 0, 0 },
 			can_dim = true,
 			need_aura = "Bloodsurge",
 		},
-		{
-			type = "REACTIVE",
-			note = "RIGHT",
-			color = { 1, .5, 0 },
-			can_dim = true,
-		},
+		TEMPLATE.attack
 	},
 	["Demoralizing Shout"] = TEMPLATE.debuff(nil, {"Demoralizing Roar"}),
 	["Hamstring"] = TEMPLATE.debuff(),
 	["Thunder Clap"] = { TEMPLATE.debuff(nil, {"Frost Fever"}), TEMPLATE.instant_aoe },
 	["Sunder Armor"] = TEMPLATE.debuff(5),
-	["Heroic Strike"] = TEMPLATE.melee(55),
+	["Heroic Strike"] = TEMPLATE.melee(70),
 	["Cleave"] = TEMPLATE.melee(55),
 	["Raging Blow"] = {
 		type = "COOLDOWN",
@@ -204,12 +199,22 @@ local SPELLS = {
 		can_dim = true,
 		need_enraged = true,
 	},
+	["Dragon Roar"] = TEMPLATE.instant_aoe,
+	["Colossus Smash"] = TEMPLATE.attack,
 	["Blood Fury"] = { 
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 0.5, 0.5, 1 },
 		can_dim = true,
 	},
+	["Berserker Rage"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 1, .5, 0 },
+		can_dim = true,
+		need_no_enraged = true,
+	},
+	["Inner Rage"] = TEMPLATE.reactive,
 
 	["Shadow Bolt"] = TEMPLATE.attack,
 	["Immolate"] = TEMPLATE.dot,
@@ -336,6 +341,20 @@ function GuiBarHero:OnSpellsChanged()
 	self:RefreshBars()
 end
 
+function GuiBarHero:GetNumSpellBookItems()
+	local t = GetNumSpellTabs()
+	local n
+	while true do
+		local name, texture, offset, numSpells = GetSpellTabInfo(t)
+		if not name then
+			break
+		end
+		n = offset + numSpells
+		t = t + 1
+	end
+	return n
+end
+
 function GuiBarHero:Show()
 	self.db.char.shown = true
 	self.main_frame:Show()
@@ -423,14 +442,14 @@ function GuiBarHero:FindSpell(name)
 		return "Trinket 2", "Trinket 2"
 	end
 	local slot_id = 1
-	while true do
+	for slot_id = 1, GuiBarHero:GetNumSpellBookItems() do
 		local full_name = GetSpellBookItemName(slot_id, BOOKTYPE_SPELL)
 		if not full_name then return nil end
 		if string.find(string.lower(full_name), name) then
 			return slot_id, full_name
 		end
-		slot_id = slot_id + 1
 	end
+	return nil
 end
 
 
@@ -1077,14 +1096,23 @@ function Bar:Draw()
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.need_aura)
 		if (not name) then
 			dimmed = true
+			hidden = true
 		end
 	end
-	if self.spell_info.need_enraged then
+	if self.spell_info.need_enraged or self.spell_info.need_aura then
 		bar_end = 0
 		for _, aura in ipairs(ENRAGE_AURAS) do
 			name, _, _, _, _, _, expires = UnitBuff("player", aura)
 			if name and bar_end < expires then
 				bar_end = expires
+			end
+		end
+	end
+	if self.spell_info.need_no_enraged then
+		for _, aura in ipairs(ENRAGE_AURAS) do
+			name, _, _, _, _, _, expires = UnitBuff("player", aura)
+			if name and self.next_note < expires then
+				self.next_note = expires
 			end
 		end
 	end

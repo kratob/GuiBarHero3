@@ -1,4 +1,4 @@
-## Interface: 40000
+## Interface: 50001
 ## Title: GuiBarHero3
 ## Notes: Visualize cooldowns and buff durations Guitar-Hero-style.
 ## Author: TK
