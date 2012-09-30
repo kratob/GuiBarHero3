@@ -1055,7 +1055,7 @@ function Bar:UpdateDebuff(event, unit)
 	end
 end
 
-Bar.update_cooldown_events = { "SPELL_UPDATE_COOLDOWN", "PLAYER_TARGET_CHANGED", "CURRENT_SPELL_CAST_CHANGED" }
+Bar.update_cooldown_events = { "SPELL_UPDATE_COOLDOWN", "PLAYER_TARGET_CHANGED", "CURRENT_SPELL_CAST_CHANGED", "ACTIONBAR_UPDATE_STATE" }
 
 function Bar:UpdateCooldown()
 	self = self.owner
