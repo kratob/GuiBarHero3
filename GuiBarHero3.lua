@@ -1067,6 +1067,11 @@ function Bar:UpdateCooldown()
 		return
 	end
 	local start, duration = GetSpellCooldown(self.slot_id, BOOKTYPE_SPELL)
+	if not duration then
+		self.next_note = nil
+		self.icon_lit = nil
+		return
+	end
 	if not self.next_note then self.next_note = 0 end
 	if duration > 1.5 then
 		self.next_note = start + duration
