@@ -185,7 +185,8 @@ local SPELLS = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 1, .5, 0 },
-		can_dim = true
+		can_dim = true,
+		need_no_aura = "Shield Block",
 	},
 	["Wild Strike"] = {
 		{
@@ -1175,6 +1176,12 @@ function Bar:Draw()
 			if name and self.next_note < expires then
 				self.next_note = expires
 			end
+		end
+	end
+	if self.spell_info.need_no_aura then
+		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.need_no_aura)
+		if name and self.next_note < expires then
+			self.next_note = expires
 		end
 	end
 	if self.icon_only then
