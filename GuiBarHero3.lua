@@ -259,6 +259,11 @@ local SPELLS = {
 		can_dim = true,
 	},
 	["Disarm"] = TEMPLATE.attack,
+	["Demoralizing Banner"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 0, 1, 0 },
+	},
 
 	["Shadow Bolt"] = TEMPLATE.attack,
 	["Immolate"] = TEMPLATE.dot,
