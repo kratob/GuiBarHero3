@@ -23,7 +23,7 @@ local TEMPLATE = {
 	},
 	default = {
 		type = "COOLDOWN",
-		note = "CENTER",
+		note = "RIGHT",
 		color = { 0, 0, 1 },
 		can_dim = true,
 	},
