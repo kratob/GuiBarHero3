@@ -957,8 +957,8 @@ function Bar:UpdateSelfbuff(event_type, unit)
 			self.next_note = 0
 			self.icon_lit = 0
 		end
-	elseif expires then
-		self.next_note = expires 
+	elseif latest_expire then
+		self.next_note = latest_expire 
 		self.icon_lit = self.next_note
 	else
 		self.next_note = "?"
