@@ -258,6 +258,7 @@ local SPELLS = {
 		color = { 1, 0, 1 },
 		can_dim = true,
 	},
+	["Disarm"] = TEMPLATE.attack,
 
 	["Shadow Bolt"] = TEMPLATE.attack,
 	["Immolate"] = TEMPLATE.dot,
