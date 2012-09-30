@@ -46,12 +46,15 @@ local TEMPLATE = {
 		color = { 1, 0, 0 },
 		can_dim = true,
 	},
-	self_buff = {
-		type = "SELFBUFF",
-		note = "CENTER",
-		color = { 1, 1, 0 },
-		can_dim = true,
-	},
+	self_buff = function(shared) 
+		return {
+			type = "SELFBUFF",
+			note = "CENTER",
+			color = { 1, 1, 0 },
+			can_dim = true,
+			shared_buffs = shared or {},
+		}
+	end,
 	dot = {
 		type = "DEBUFF",
 		note = "CENTER",
@@ -84,7 +87,7 @@ local TEMPLATE = {
 	end,
 }
 
-local GCD_SPELLS = {"Wild Strike", "Shadow Bolt"}
+local GCD_SPELLS = {"Hamstring", "Shadow Bolt"}
 local ENRAGE_AURAS = {"Berserker Rage", "Death Wish", "Enrage"}
 
 local SPELLS = {
@@ -112,7 +115,7 @@ local SPELLS = {
 
 	["Victory Rush"] = TEMPLATE.attack,
 	["Battle Shout"] = {
-		TEMPLATE.self_buff,
+		TEMPLATE.self_buff({"Horn of Winter"}),
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
@@ -121,7 +124,16 @@ local SPELLS = {
 			max_rage = 70,
 		}
 	},
-	["Commanding Shout"] = TEMPLATE.self_buff,
+	["Commanding Shout"] = {
+		TEMPLATE.self_buff({"Horn of Winter"}),
+		{
+			type = "COOLDOWN",
+			note = "RIGHT",
+			color = { 1, .5, 0 },
+			can_dim = true,
+			max_rage = 70,
+		}
+	},
 	["Devastate"] = TEMPLATE.attack,
 	["Revenge"] = TEMPLATE.attack,
 	["Shield Slam"] = TEMPLATE.attack,
@@ -187,9 +199,17 @@ local SPELLS = {
 	},
 	["Demoralizing Shout"] = TEMPLATE.debuff(nil, {"Demoralizing Roar"}),
 	["Hamstring"] = TEMPLATE.debuff(),
-	["Thunder Clap"] = { TEMPLATE.debuff(nil, {"Frost Fever"}), TEMPLATE.instant_aoe },
+	["Thunder Clap"] = { TEMPLATE.debuff(nil, {"Weakened Blows", "Frost Fever"}), TEMPLATE.instant_aoe },
 	["Sunder Armor"] = TEMPLATE.debuff(5),
-	["Heroic Strike"] = TEMPLATE.melee(70),
+	["Heroic Strike"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = { 1, 1, 1 },
+		need_target = true,
+		can_dim = true,
+		min_rage = 70,
+		also_lit_on_aura = "Ultimatum",
+	},
 	["Cleave"] = TEMPLATE.melee(55),
 	["Raging Blow"] = {
 		type = "COOLDOWN",
@@ -917,10 +937,22 @@ Bar.update_selfbuff_events = { "UNIT_AURA" }
 function Bar:UpdateSelfbuff(event_type, unit)
 	self = self.owner
 	if unit and unit ~= "player" then return end
-	local name, expires
-	name, _, _, _, _, _, expires = UnitBuff("player", self.spell_name)
+	local name, found, expires, latest_expire
+	found, _, _, _, _, _, latest_expire = UnitBuff("player", self.spell_name)
 
-	if (not name) then
+	if self.spell_info.shared_buffs then
+		for _, shared_buff in ipairs(self.spell_info.shared_buffs) do
+			name, _, _, _, _, _, expires = UnitBuff("player", shared_buff)
+			if name then
+				found = true
+				if expires and ((not latest_expire) or (expires > latest_expire)) then
+					latest_expire = expires
+				end
+			end
+		end
+	end
+
+	if (not found) then
 		if not tonumber(self.next_note) or self.next_note > GetTime() + EPS.time then
 			self.next_note = 0
 			self.icon_lit = 0
@@ -934,7 +966,7 @@ function Bar:UpdateSelfbuff(event_type, unit)
 	end
 end
 
-Bar.update_debuff_events = { "UNIT_AURA", "PLAYER_TARGET_CHANGED" }
+Bar.update_debuff_events = { "UNIT_AURA", "PLAYER_TARGET_CHANGED", "SPELL_UPDATE_COOLDOWN" }
 
 function Bar:UpdateDebuff(event, unit)
 	self = self.owner
@@ -965,6 +997,13 @@ function Bar:UpdateDebuff(event, unit)
 			end
 		end
 	end
+
+	local start, duration = GetSpellCooldown(self.slot_id, BOOKTYPE_SPELL)
+	if (duration > 1.5 or (duration > 0 and self.next_note > start + duration + EPS.time)) and start + duration > latest_expire then
+		latest_expire = start + duration
+		found = true
+	end
+
 	if found then
 		if self.spell_info.subtract_cast_time then
 			local _, _, _, _, _, _, castTime = GetSpellInfo(self.spell_name)
@@ -1094,12 +1133,22 @@ function Bar:Draw()
 	end
 	if self.spell_info.need_aura then
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.need_aura)
-		if (not name) then
+		if name then
+			bar_end = expires
+		else
 			dimmed = true
 			hidden = true
 		end
 	end
-	if self.spell_info.need_enraged or self.spell_info.need_aura then
+	if self.spell_info.also_lit_on_aura then
+		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.also_lit_on_aura)
+		if name then
+			bar_end = expires
+			dimmed = false
+			hidden = false
+		end
+	end
+	if self.spell_info.need_enraged then
 		bar_end = 0
 		for _, aura in ipairs(ENRAGE_AURAS) do
 			name, _, _, _, _, _, expires = UnitBuff("player", aura)
