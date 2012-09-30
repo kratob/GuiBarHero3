@@ -235,6 +235,18 @@ local SPELLS = {
 		need_no_enraged = true,
 	},
 	["Inner Rage"] = TEMPLATE.reactive,
+	["Skull Banner"] = {
+		type = "COOLDOWN",
+		note = "CENTER",
+		color = { 1, 0, 1 },
+		can_dim = true,
+	},
+	["Avatar"] = {
+		type = "COOLDOWN",
+		note = "CENTER",
+		color = { 1, 0, 1 },
+		can_dim = true,
+	},
 
 	["Shadow Bolt"] = TEMPLATE.attack,
 	["Immolate"] = TEMPLATE.dot,
