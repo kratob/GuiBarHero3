@@ -495,7 +495,7 @@ function GuiBarHero:FindSpell(name)
 	for slot_id = 1, GuiBarHero:GetNumSpellBookItems() do
 		local full_name = GetSpellBookItemName(slot_id, BOOKTYPE_SPELL)
 		if not full_name then return nil end
-		if string.find(string.lower(full_name), name) then
+		if string.lower(full_name) == name then
 			return slot_id, full_name
 		end
 	end
