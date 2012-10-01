@@ -115,7 +115,7 @@ local SPELLS = {
 
 	["Victory Rush"] = TEMPLATE.attack,
 	["Battle Shout"] = {
-		TEMPLATE.self_buff({"Horn of Winter"}),
+		TEMPLATE.self_buff({"Horn of Winter", "Roar of Courage"}),
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
@@ -125,7 +125,7 @@ local SPELLS = {
 		}
 	},
 	["Commanding Shout"] = {
-		TEMPLATE.self_buff({"Horn of Winter"}),
+		TEMPLATE.self_buff({"Power Word: Fortitude", "Blood Pact"}),
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
@@ -248,13 +248,13 @@ local SPELLS = {
 	["Inner Rage"] = TEMPLATE.reactive,
 	["Skull Banner"] = {
 		type = "COOLDOWN",
-		note = "CENTER",
+		note = "RIGHT",
 		color = { 1, 0, 1 },
 		can_dim = true,
 	},
 	["Avatar"] = {
 		type = "COOLDOWN",
-		note = "CENTER",
+		note = "RIGHT",
 		color = { 1, 0, 1 },
 		can_dim = true,
 	},
@@ -264,6 +264,7 @@ local SPELLS = {
 		note = "RIGHT",
 		color = { 0, 1, 0 },
 	},
+	["Pummel"] = TEMPLATE.attack,
 
 	["Shadow Bolt"] = TEMPLATE.attack,
 	["Immolate"] = TEMPLATE.dot,
