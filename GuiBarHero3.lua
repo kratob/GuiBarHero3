@@ -1029,7 +1029,7 @@ function Bar:UpdateDebuff(event, unit)
 	end
 
 	local start, duration = GetSpellCooldown(self.slot_id, BOOKTYPE_SPELL)
-	if (duration > 1.5 or (duration > 0 and self.next_note > start + duration + EPS.time)) and start + duration > latest_expire then
+	if duration and (duration > 1.5 or (duration > 0 and self.next_note > start + duration + EPS.time)) and start + duration > latest_expire then
 		latest_expire = start + duration
 		found = true
 	end
