@@ -199,6 +199,12 @@ local SPELLS = {
 		can_dim = true,
 		need_no_aura = "Shield Block",
 	},
+	["Shield Barrier"] = {
+		type = "SELFBUFF",
+		note = "RIGHT",
+		color = COLORS.orange,
+		can_dim = true,
+	},
 	["Wild Strike"] = {
 		{
 			type = "REACTIVE",
@@ -437,6 +443,8 @@ function GuiBarHero:SetCurrentProfile(nr)
 end
 
 function GuiBarHero:RefreshBars()
+	GuiBarHero:FindGcdSpell()
+
 	self.main_frame.profile_frame:ClearAllPoints()
 	self.main_frame.icon_frame:ClearAllPoints()
 	if self.db.char.icons_on_top then
@@ -453,6 +461,16 @@ function GuiBarHero:RefreshBars()
 	self.main_frame.profile_buttons[profile]:SetTextColor(unpack(LAYOUT.profile.current_color))
 	self.main_frame:SetBars(self.db.char.profiles[profile].bars)
 	self.main_frame:SetBars(self.db.char.profiles[profile].icons, true)
+end
+
+function GuiBarHero:FindGcdSpell()
+	for _, gcd_spell in ipairs(GCD_SPELLS) do
+		local spell = GuiBarHero:FindSpell(gcd_spell)
+		if spell then
+			main_frame.gcd_slot = spell
+			break
+		end
+	end
 end
 
 function GuiBarHero:InsertBar(nr, spell_name, icon)
@@ -601,13 +619,6 @@ function MainFrame:Create()
 	gcd_frame.tex = tex
 	main_frame.next_gcd = 0
 	main_frame.gcd_frame = gcd_frame
-	for _, gcd_spell in ipairs(GCD_SPELLS) do
-		local spell = GuiBarHero:FindSpell(gcd_spell)
-		if spell then
-			main_frame.gcd_slot = spell
-			break
-		end
-	end
 
 	main_frame.current_bars = {}
 	main_frame.current_icons = {}
