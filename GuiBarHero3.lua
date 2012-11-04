@@ -8,49 +8,60 @@ local LAYOUT = {
 	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7 },
 	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 11, alpha = 1, dim_alpha = 0.2 },
 	profile = { height = 20, width = 30, dist = 2, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
-	chord = { height = 8, width = 64, alpha = .7, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Horizontal" },
-	right_note = { height = 16, width = 16, offset = 0, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Rightarrow" },
-	left_note = { height = 16, width = 16, offset = -16, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Leftarrow" },
-	center_note = { height = 16, width = 16, offset = -8, path = "Interface\\AddOns\\GuiBarHero\\Textures\\Circle" },
+	chord = { height = 8, width = 64, alpha = .7, path = "Interface\\AddOns\\GuiBarHero3\\Textures\\Glow" },
+	right_note = { height = 16, width = 16, offset = 0, path = "Interface\\AddOns\\GuiBarHero3\\Textures\\Rightarrow" },
+	left_note = { height = 16, width = 16, offset = -16, path = "Interface\\AddOns\\GuiBarHero3\\Textures\\Leftarrow" },
+	center_note = { height = 16, width = 16, offset = -8, path = "Interface\\AddOns\\GuiBarHero3\\Textures\\Circle" },
 	bridge = { x = 20, width = 5, offset = -2.5, color = {1,1,1,.4} }
+}
+
+local COLORS = {
+	black = { 0, 0, 0 },
+	red = { 1, 0.14, 0 },
+	blue = { 0.02, 0.45, 1 },
+	green = { 0, 1, 0.3 },
+	yellow = { 1, 0.9, 0.1 },
+	orange = { 0.9, 0.62, 0 },
+	lightblue = { 0.3, 0.6, 1 },
+	violet = { 1, 0.28, 0.6 },
 }
 
 local TEMPLATE = {
 	none = {
 		type = "NONE",
 		note = "CENTER",
-		color = { 0, 0, 0 },
+		color = COLORS.black,
 	},
 	default = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 0, 0, 1 },
+		color = COLORS.blue,
 		can_dim = true,
 	},
 	attack = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, 0, 0 },
+		color = COLORS.red,
 		need_target = true,
 		can_dim = true,
 	},
 	instant_aoe = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 0, 0, 1 },
+		color = COLORS.blue,
 		can_dim = true,
 	},
 	reactive = {
 		type = "REACTIVE",
 		note = "RIGHT",
-		color = { 1, 0, 0 },
+		color = COLORS.red,
 		can_dim = true,
 	},
 	self_buff = function(shared) 
 		return {
 			type = "SELFBUFF",
 			note = "CENTER",
-			color = { 1, 1, 0 },
+			color = COLORS.yellow,
 			can_dim = true,
 			shared_buffs = shared or {},
 		}
@@ -65,7 +76,7 @@ local TEMPLATE = {
 	debuff = function(count, shared) 
 		return { type = "DEBUFF",
 			note = count and "LEFT" or "CENTER",
-			color = { 0, 1, 0 },
+			color = COLORS.green,
 			stacks = count or 0,
 			can_dim = true,
 			shared_debuffs = shared or {},
@@ -82,7 +93,7 @@ local TEMPLATE = {
 	slot_item = function(slot_name)
 		return { type = "SLOTITEM",
 			note = "RIGHT",
-			color = { 0.5, 0.5, 1 },
+			color = COLORS.lightblue,
 			slot_id = GetInventorySlotInfo(slot_name) }
 	end,
 }
@@ -94,7 +105,7 @@ local SPELLS = {
 	["Bloodthirst"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, 0, 0 },
+		color = COLORS.red,
 		need_target = true,
 		can_dim = true,
 	},
@@ -106,7 +117,7 @@ local SPELLS = {
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
-			color = { 1, 0, 0 },
+			color = COLORS.red,
 			need_target = true,
 			can_dim = true,
 			min_rage = 65,
@@ -119,7 +130,7 @@ local SPELLS = {
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
-			color = { 1, .5, 0 },
+			color = COLORS.orange,
 			can_dim = true,
 			max_rage = 70,
 		}
@@ -129,7 +140,7 @@ local SPELLS = {
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
-			color = { 1, .5, 0 },
+			color = COLORS.orange,
 			can_dim = true,
 			max_rage = 70,
 		}
@@ -143,26 +154,26 @@ local SPELLS = {
 	["Sweeping Strikes"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = true
 	},
 	["Deadly Calm"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = true
 	},
 	["Retaliation"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = false,
 		need_target = false,
 	},
 	["Recklessness"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = false,
 		need_target = true,
 		need_boss = true,
@@ -170,13 +181,13 @@ local SPELLS = {
 	["Rampage"] = {
 		type = "SELFBUFF",
 		note = "LEFT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = true
 	},
 	["Rend"] = {
 		type = "DEBUFF",
 		note = "RIGHT",
-		color = { 1, 0, 0 },
+		color = COLORS.red,
 		stacks = 0,
 		can_dim = true,
 		shared_debuffs = {}
@@ -184,7 +195,7 @@ local SPELLS = {
 	["Shield Block"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = true,
 		need_no_aura = "Shield Block",
 	},
@@ -192,7 +203,7 @@ local SPELLS = {
 		{
 			type = "REACTIVE",
 			note = "RIGHT",
-			color = { 1, 0, 0 },
+			color = COLORS.red,
 			can_dim = true,
 			need_aura = "Bloodsurge",
 		},
@@ -225,7 +236,7 @@ local SPELLS = {
 	["Raging Blow"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, 0, 0 },
+		color = COLORS.red,
 		need_target = true,
 		can_dim = true,
 		need_enraged = true,
@@ -241,7 +252,7 @@ local SPELLS = {
 	["Berserker Rage"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, .5, 0 },
+		color = COLORS.orange,
 		can_dim = true,
 		need_no_enraged = true,
 	},
@@ -249,20 +260,20 @@ local SPELLS = {
 	["Skull Banner"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, 0, 1 },
+		color = COLORS.violet,
 		can_dim = true,
 	},
 	["Avatar"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 1, 0, 1 },
+		color = COLORS.violet,
 		can_dim = true,
 	},
 	["Disarm"] = TEMPLATE.attack,
 	["Demoralizing Banner"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = { 0, 1, 0 },
+		color = COLORS.green,
 	},
 	["Pummel"] = TEMPLATE.attack,
 
