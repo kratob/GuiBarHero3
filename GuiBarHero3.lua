@@ -1298,9 +1298,9 @@ function Bar:DrawNote(note, dimmed)
 		tex:SetPoint("TOPLEFT", offset, 0)
 	end
 	if offset + self.note_width > self.width then
-		qright = 1 - (offset + self.note_width - self.width) / self.note_width
+		qright = 0.95 - (offset + self.note_width - self.width) / self.note_width
 	else
-		qright = 1
+		qright = 0.95
 	end
 	if qleft >= qright then
 		tex:Hide()
