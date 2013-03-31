@@ -25,105 +25,29 @@ local Bar_mt = { __index = Bar }
 
 function MainFrame:SetCurrentProfile(nr)
 	if nr > 0 and nr <= LAYOUT.profile.max then
-		GuiBarHero.db.char.current_profile = nr
-		if not GuiBarHero.db.char.profiles[nr] then
-			GuiBarHero.db.char.profiles[nr] = { bars = {}, icons = {} }
-		end
+		GuiBarHero.settings:SetCurrentProfile(nr)
 		self:RefreshBars()
 	end
 end
 
 function MainFrame:RefreshBars()
-	GuiBarHero:FindGcdSpell()
+	self.gcd_slot = GuiBarHero.Utils.FindGcdSpell()
 
 	self.profile_frame:ClearAllPoints()
 	self.icon_frame:ClearAllPoints()
-	if GuiBarHero.db.char.icons_on_top then
+	if GuiBarHero.settings:GetIconsOnTop() then
 		self.profile_frame:SetPoint("BOTTOMLEFT", LAYOUT.main.border, - LAYOUT.profile.dist - LAYOUT.profile.height)
 		self.icon_frame:SetPoint("TOPLEFT", LAYOUT.main.border, LAYOUT.large_icon.dist + LAYOUT.large_icon.height)
 	else
 		self.icon_frame:SetPoint("BOTTOMLEFT", LAYOUT.main.border, - LAYOUT.large_icon.dist - LAYOUT.large_icon.height)
 		self.profile_frame:SetPoint("TOPLEFT", LAYOUT.main.border, LAYOUT.profile.dist + LAYOUT.profile.height)
 	end
-	local profile = GuiBarHero.db.char.current_profile
 	for i = 1, LAYOUT.profile.max do
 		self.profile_buttons[i]:SetTextColor(unpack(LAYOUT.profile.color))
 	end
-	self.profile_buttons[profile]:SetTextColor(unpack(LAYOUT.profile.current_color))
-	self:SetBars(GuiBarHero.db.char.profiles[profile].bars)
-	self:SetBars(GuiBarHero.db.char.profiles[profile].icons, true)
-end
-
-function GuiBarHero:FindGcdSpell()
-	for _, gcd_spell in ipairs(self.Config.gcd_spells) do
-		local spell = GuiBarHero:FindSpell(gcd_spell)
-		if spell then
-			main_frame.gcd_slot = spell
-			break
-		end
-	end
-end
-
-function GuiBarHero:InsertBar(nr, spell_name, icon)
-	local max, db
-	local profile = self.db.char.current_profile
-	if icon then
-		max = LAYOUT.large_icon.max
-		db = GuiBarHero.db.char.profiles[profile].icons
-	else
-		db = GuiBarHero.db.char.profiles[profile].bars
-		max = #db + (spell_name and 1 or 0)
-	end
-	if nr > 0 and nr <= max and (icon or #db < LAYOUT.bar.max) then
-		local slot, full_name 
-		if spell_name and spell_name ~= "" then slot, full_name = GuiBarHero:FindSpell(spell_name) end
-		if full_name then 
-			if db[nr] and db[nr].name == full_name then
-				db[nr].alt = (db[nr].alt or 1) + 1
-			else
-				if icon then
-					db[nr] = { name = full_name };
-				else
-					table.insert(db, nr, { name = full_name })
-				end
-			end
-		else
-			if icon then
-				db[nr] = nil
-			else
-				table.remove(db, nr)
-			end
-		end
-		GuiBarHero.main_frame:RefreshBars()
-	end
-end
-
-function GuiBarHero:GetBarSpellName(nr, icons)
-	local profile = self.db.char.current_profile
-	local db = icons and self.db.char.profiles[profile].icons or self.db.char.profiles[profile].bars
-	return db[nr] and db[nr].name
-end
-
-function GuiBarHero:FindSpell(name)
-	name = string.lower(name)
-	if name == "trinket 1" then 
-		return "Trinket 1", "Trinket 1"
-	elseif name == "trinket 2" then
-		return "Trinket 2", "Trinket 2"
-	end
-	local slot_id = 1
-	for slot_id = 1, GuiBarHero.Utils:GetNumSpellBookItems() do
-		local full_name = GetSpellBookItemName(slot_id, BOOKTYPE_SPELL)
-		if not full_name then return nil end
-		if string.lower(full_name) == name then
-			return slot_id, full_name
-		end
-	end
-	return nil
-end
-
-function GuiBarHero:CreateMainFrame()
-	return MainFrame:Create()
+	self.profile_buttons[GuiBarHero.settings:GetCurrentProfile()]:SetTextColor(unpack(LAYOUT.profile.current_color))
+	self:SetBars(GuiBarHero.settings:GetBars())
+	self:SetBars(GuiBarHero.settings:GetIcons(), true)
 end
 
 function MainFrame:Create()
@@ -134,7 +58,7 @@ function MainFrame:Create()
 	frame.owner = main_frame
 	frame:SetWidth(LAYOUT.bar.width + 2 * LAYOUT.main.border)
 	frame:SetHeight(2 * LAYOUT.main.border + 2 * LAYOUT.bar.skip + LAYOUT.bar.height)
-	local pos = GuiBarHero.db.char.pos
+	local pos = GuiBarHero.settings:GetPosition()
 	if pos then
 		frame:SetPoint(pos.rel_1, UIParent, pos.rel_2, pos.x, pos.y)
 	else
@@ -264,14 +188,27 @@ function MainFrame:BarClick(button)
 				end
 			end
 			if name then
-				GuiBarHero:InsertBar(insert_nr, name, icons)
+				if icons then
+					self:SetIcon(insert_nr, name)
+				else
+					self:InsertBar(insert_nr, name)
+				end
 			end
 		elseif button == "RightButton" and IsShiftKeyDown() then
-			GuiBarHero:InsertBar(nr, nil, icons)
+			if icons then
+				self:RemoveIcon(nr)
+			else
+				self:RemoveBar(nr)
+			end
 		elseif button == "LeftButton" and IsShiftKeyDown() then
-			local name = GuiBarHero:GetBarSpellName(nr, icons)
+			local name 
+			if icons then
+				name = GuiBarHero.settings:GetIconSpellName(nr)
+			else
+				name = GuiBarHero.settings:GetBarSpellName(nr)
+			end
 			if name then
-				local slot = GuiBarHero:FindSpell(GuiBarHero:GetBarSpellName(nr, icons))
+				local slot = GuiBarHero.Utils:FindSpell(name)
 				_, spell_id = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL)
 				PickupSpell(spell_id)
 			end
@@ -289,7 +226,7 @@ function MainFrame:SetBars(bars, icons)
 				current_bars[i] = nil
 			end
 			if bars[i] then
-				local slot, name = GuiBarHero:FindSpell(bars[i].name)
+				local slot, name = GuiBarHero.Utils:FindSpell(bars[i].name)
 				if name then 
 					local new_bar = self:AquireBar(icons)
 					if icons then
@@ -356,7 +293,7 @@ function MainFrame:OnMouseDown(button)
 			self:SetMovable(0)
 			self:StopMovingOrSizing()
 			local l_rel_1, _, l_rel_2, l_x, l_y = self:GetPoint(1)
-			GuiBarHero.db.char.pos = { rel_1 = l_rel_1, rel_2 = l_rel_2, x = l_x, y = l_y }
+			GuiBarHero.settings:SetPosition({ rel_1 = l_rel_1, rel_2 = l_rel_2, x = l_x, y = l_y })
 		end
 	end
 end
@@ -987,3 +924,5 @@ function Bar:Show()
 	if not self.icon_only then self.frame:Show() end
 	self.icon_frame:Show()
 end
+
+GuiBarHero.MainFrame = MainFrame

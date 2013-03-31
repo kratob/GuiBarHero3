@@ -24,24 +24,15 @@ local OPTIONS = {
 GuiBarHero = LibStub("AceAddon-3.0"):NewAddon("GuiBarHero3", "AceConsole-3.0", "AceEvent-3.0")
 LibStub("AceConfig-3.0"):RegisterOptionsTable("GuiBarHero3", OPTIONS, {"guibarhero", "gbh"})
 
-local DB_DEFAULTS = { 
-	char = {
-		profiles = { { bars = {}, icons = {} } },
-		current_profile = 1,
-		shown = true,
-		icons_on_top = false,
-	},
-}
-
 
 function GuiBarHero:OnInitialize()
-	self.db = LibStub("AceDB-3.0"):New("GuiBarHero3DB", DB_DEFAULTS)
+	self.settings = self.Settings:Create()
 end
 
 function GuiBarHero:OnEnable()
-	self.main_frame = self:CreateMainFrame()
+	self.main_frame = self.MainFrame:Create()
 	self.main_frame:RefreshBars()
-	if self.db.char.shown then 
+	if self.settings:GetShown() then 
 		self:Show()
 	else
 		self:Hide()
@@ -57,12 +48,12 @@ function GuiBarHero:OnSpellsChanged()
 end
 
 function GuiBarHero:Show()
-	self.db.char.shown = true
+	self.settings:SetShown(true)
 	self.main_frame:Show()
 end
 
 function GuiBarHero:Hide()
-	self.db.char.shown = false
+	self.settings:SetShown(false)
 	self.main_frame:Hide()
 end
 
