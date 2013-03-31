@@ -11,4 +11,9 @@
 embeds.xml
 #@end-no-lib-strip@
 
-GuiBarHero3.lua
+Core.lua
+Config.lua
+Util.lua
+Ui.lua
+Spell.lua
+Tests.lua
