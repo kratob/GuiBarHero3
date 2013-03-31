@@ -5,7 +5,7 @@ local DEBUG = { bars_created = 0, textures_created = 0 }
 local LAYOUT = { 
 	main = { border = 4, alpha = 0.8 },
 	bar = { height = 16, width = 410, skip = 7, max = 20, dim_alpha = 0.4, speed = 30 }, 
-	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7 },
+	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7, text_color={1,1,1} },
 	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 11, alpha = 1, dim_alpha = 0.2 },
 	profile = { height = 20, width = 30, dist = 2, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
 	chord = { height = 8, width = 64, alpha = .7, path = "Interface\\AddOns\\GuiBarHero3\\Textures\\Glow" },
@@ -80,6 +80,7 @@ local TEMPLATE = {
 			stacks = count or 0,
 			can_dim = true,
 			shared_debuffs = shared or {},
+			show_stack_count = count,
 		}
 	end,
 	melee = function(rage) return {
@@ -832,6 +833,16 @@ function Bar:Create(parent, icon_only)
 	tex:SetVertexColor(1,1,1,LAYOUT.icon.alpha)
 	bar.icon_tex = tex
 
+	local fs = icon_frame:CreateFontString("FontString")
+	fs:SetFont(LAYOUT.profile.font, LAYOUT.profile.font_size)
+	fs:SetTextColor(unpack(LAYOUT.icon.text_color))
+	fs:SetShadowColor(0, 0, 0, 1)
+	fs:SetShadowOffset(1, -1)
+	fs:SetPoint("CENTER", icon_frame, "CENTER", 0, 0)
+	fs:SetJustifyH("CENTER")
+	fs:Hide()
+	bar.icon_text = fs
+
 	bar.note_type = LAYOUT.center_note
 	bar.next_note = 0
 	bar.spell_info = TEMPLATE.none
@@ -928,6 +939,7 @@ function Bar:SetIconPosition(x, y, width, height)
 	self.icon_frame:SetWidth(width)
 	self.icon_frame:SetHeight(height)
 	self.icon_frame:SetPoint("TOPLEFT", x, y)
+	self.icon_text:Hide()
 end
 
 function Bar:SetSpeed(speed)
@@ -1020,6 +1032,47 @@ end
 
 Bar.update_debuff_events = { "UNIT_AURA", "PLAYER_TARGET_CHANGED", "SPELL_UPDATE_COOLDOWN" }
 
+function Bar:DebuffEnd(only_self)
+	if (not UnitExists("target")) or UnitIsDead("target") or UnitIsFriend("player", "target") then
+		self.next_note = nil
+		self.icon_lit = nil
+		return
+	end
+	local name, count, expires
+	local total_count = 0
+	local latest_expire = 0
+	local found = false
+	name, _, _, count, _, _, expires, caster = UnitDebuff("target", self.spell_name)
+	if (name and (not only_self or caster == "player")) then
+		total_count = total_count + count
+		if ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks) then
+			found = true
+			if expires and expires > latest_expire then
+				latest_expire = expires
+			end
+		end
+	end
+	if self.spell_info.shared_debuffs then
+		for _, shared_debuff in ipairs(self.spell_info.shared_debuffs) do
+			name, _, _, count, _, _, expires, caster = UnitDebuff("target", shared_debuff)
+			if (name and (not only_self or caster == "player")) then
+				total_count = total_count + count
+                if ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks) then
+					found = true
+					if expires and expires > latest_expire then
+						latest_expire = expires
+					end
+				end
+			end
+		end
+	end
+	if found then
+		return latest_expire, total_count
+	else
+		return nil, total_count
+	end
+end
+
 function Bar:UpdateDebuff(event, unit)
 	self = self.owner
 	if event == "UNIT_AURA" and unit ~= "target" then return end
@@ -1028,35 +1081,17 @@ function Bar:UpdateDebuff(event, unit)
 		self.icon_lit = nil
 		return
 	end
-	local name, count, expires
-	local latest_expire = 0
-	local found = false
-	name, _, _, count, _, _, expires = UnitDebuff("target", self.spell_name)
-	if (name and ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks)) then
-		found = true
-		if expires then
-			latest_expire = expires
-		end
-	end
-	if self.spell_info.shared_debuffs then
-		for _, shared_debuff in ipairs(self.spell_info.shared_debuffs) do
-			name, _, _, _, _, _, expires = UnitDebuff("target", shared_debuff)
-			if name then
-				found = true
-				if expires and expires > latest_expire then
-					latest_expire = expires
-				end
-			end
-		end
-	end
+	local latest_expire, count = self:DebuffEnd()
+	local found = latest_expire
+	latest_expire = (latest_expire or 0)
 
 	local start, duration = GetSpellCooldown(self.slot_id, BOOKTYPE_SPELL)
-	if duration and (duration > 1.5 or (duration > 0 and self.next_note > start + duration + EPS.time)) and start + duration > latest_expire then
+	if duration and (duration > 1.5 or (duration > 0 and self.next_note and self.next_note > start + duration + EPS.time)) and start + duration > latest_expire then
 		latest_expire = start + duration
 		found = true
 	end
 
-	if found then
+	if latest_expire then
 		if self.spell_info.subtract_cast_time then
 			local _, _, _, _, _, _, castTime = GetSpellInfo(self.spell_name)
 			latest_expire = latest_expire - castTime / 1000
@@ -1075,6 +1110,15 @@ function Bar:UpdateDebuff(event, unit)
 	if (not found) and (not tonumber(self.next_note) or self.next_note > GetTime() + EPS.time) then
 		self.next_note = 0
 		self.icon_lit = 0
+	end
+
+	if self.spell_info.show_stack_count then
+		if count and not found then
+			self.icon_text:SetText("" .. count)
+			self.icon_text:Show()
+		else
+			self.icon_text:Hide()
+		end
 	end
 end
 
@@ -1111,6 +1155,16 @@ function Bar:UpdateCooldown()
 		self.next_note = endTime / 1000
 	end
 	self.icon_lit = self.next_note
+
+	if self.spell_info.show_buff_count then
+		found, _, _, count = UnitBuff("player", self.spell_info.show_buff_count)
+		if found then
+			self.icon_text:SetText("" .. count)
+			self.icon_text:Show()
+		else
+			self.icon_text:Hide()
+		end
+	end
 end
 
 Bar.update_slot_item_events = { "BAG_UPDATE_COOLDOWN", "UNIT_INVENTORY_CHANGED" }
