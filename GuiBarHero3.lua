@@ -162,7 +162,8 @@ local SPELLS = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = COLORS.orange,
-		can_dim = true
+		can_dim = true,
+		min_rage = 60
 	},
 	["Retaliation"] = {
 		type = "COOLDOWN",
@@ -214,12 +215,18 @@ local SPELLS = {
 			can_dim = true,
 			need_aura = "Bloodsurge",
 		},
-		TEMPLATE.attack
+		{
+			type = "COOLDOWN",
+			note = "RIGHT",
+			color = COLORS.red,
+			can_dim = true,
+			min_rage = 80,
+		},
 	},
 	["Demoralizing Shout"] = TEMPLATE.debuff(nil, {"Demoralizing Roar"}),
 	["Hamstring"] = TEMPLATE.debuff(),
 	["Thunder Clap"] = { TEMPLATE.debuff(nil, {"Weakened Blows", "Frost Fever"}), TEMPLATE.instant_aoe },
-	["Sunder Armor"] = TEMPLATE.debuff(5),
+	["Sunder Armor"] = TEMPLATE.debuff(3, {"Weakened Armor"}),
 	["Heroic Strike"] = {
 		{
 			type = "COOLDOWN",
@@ -227,7 +234,7 @@ local SPELLS = {
 			color = { 1, 1, 1 },
 			need_target = true,
 			can_dim = true,
-			min_rage = 70,
+			min_rage = 80,
 			also_lit_on_aura = "Ultimatum",
 		},
 		{
@@ -246,10 +253,17 @@ local SPELLS = {
 		color = COLORS.red,
 		need_target = true,
 		can_dim = true,
-		need_enraged = true,
+		show_buff_count = "Raging Blow!",
 	},
 	["Dragon Roar"] = TEMPLATE.instant_aoe,
-	["Colossus Smash"] = TEMPLATE.attack,
+	["Colossus Smash"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = COLORS.red,
+		need_target = true,
+		can_dim = true,
+		show_debuff = true,
+	},
 	["Blood Fury"] = { 
 		type = "COOLDOWN",
 		note = "RIGHT",
@@ -261,7 +275,8 @@ local SPELLS = {
 		note = "RIGHT",
 		color = COLORS.orange,
 		can_dim = true,
-		need_no_enraged = true,
+		--need_no_enraged = true,
+		dim_on_enrage = true,
 	},
 	["Inner Rage"] = TEMPLATE.reactive,
 	["Skull Banner"] = {
@@ -271,6 +286,12 @@ local SPELLS = {
 		can_dim = true,
 	},
 	["Avatar"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = COLORS.violet,
+		can_dim = true,
+	},
+	["Bloodbath"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = COLORS.violet,
@@ -919,7 +940,7 @@ function Bar:UpdateIcon(_, unit)
 	elseif update_spells then
 		if self.slot_id then
 			self.icon_tex:SetTexture(GetSpellTexture(self.slot_id, BOOKTYPE_SPELL))
-			self.icon_tex:Show()
+		    self.icon_tex:Show()
 		else
 			self.icon_tex:Hide()
 		end
@@ -1233,6 +1254,7 @@ function Bar:Draw()
 	local dimmed = false
 	local hidden = false
 	local bar_end = nil
+	local bar_start = self.next_note
 	if self.spell_info.can_dim and ((not IsUsableSpell(self.spell_name)) or (SpellHasRange(self.spell_name) and IsSpellInRange(self.spell_name, "target") == 0)) then
 		dimmed = true
 	end
@@ -1249,6 +1271,16 @@ function Bar:Draw()
 		else
 			dimmed = true
 			hidden = true
+		end
+	end
+	if self.spell_info.show_debuff then
+		local expires = self:DebuffEnd(true)
+		if expires then
+			bar_end = expires
+			bar_start = 0
+			if self.next_note > time then
+				dimmed = true
+			end
 		end
 	end
 	if self.spell_info.also_lit_on_aura then
@@ -1271,27 +1303,35 @@ function Bar:Draw()
 	if self.spell_info.need_no_enraged then
 		for _, aura in ipairs(ENRAGE_AURAS) do
 			name, _, _, _, _, _, expires = UnitBuff("player", aura)
-			if name and self.next_note < expires then
-				self.next_note = expires
+			if name and bar_start < expires then
+				bar_start = expires
+			end
+		end
+	end
+	if self.spell_info.dim_on_enrage then
+		for _, aura in ipairs(ENRAGE_AURAS) do
+			name, _, _, _, _, _, expires = UnitBuff("player", aura)
+			if name and bar_start < expires then
+				dimmed = true
 			end
 		end
 	end
 	if self.spell_info.need_no_aura then
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.need_no_aura)
-		if name and self.next_note < expires then
-			self.next_note = expires
+		if name and bar_start < expires then
+			bar_start = expires
 		end
 	end
 	if self.icon_only then
 		dimmed = dimmed or (not self.icon_lit) or self.icon_lit > time or hidden
 		self.icon_tex:SetVertexColor(1, 1, 1, dimmed and LAYOUT.large_icon.dim_alpha or LAYOUT.large_icon.alpha )
 	else
-		if (not self.next_note) or hidden or (bar_end and (bar_end < self.next_note)) then
+		if (not bar_start) or hidden or (bar_end and (bar_end < bar_start)) then
 			self:DrawEmpty()
 		elseif self.next_note == "?" then
 			self:DrawUnknown()
 		else
-			local x = (self.next_note - time) * self.speed + LAYOUT.bridge.x
+			local x = (bar_start - time) * self.speed + LAYOUT.bridge.x
 			local x2 = nil
 			if bar_end then
 				x2 = (bar_end - time) * self.speed + LAYOUT.bridge.x
