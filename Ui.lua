@@ -1,6 +1,6 @@
 local LAYOUT = { 
 	main = { border = 4, alpha = 0.8 },
-	bar = { height = 16, width = 410, skip = 7, max = 20, dim_alpha = 0.4, speed = 30 }, 
+	bar = { height = 16, width = 410, skip = 7, max = 20, dim_alpha = 0.4, speed = 5 }, 
 	icon = { height = 20, width = 20, dist = 1, vdist = 4, skip = 8, alpha = 0.7, text_color={1,1,1} },
 	large_icon = { height = 30, width = 30, dist = 4, skip = 8, max = 11, alpha = 1, dim_alpha = 0.2 },
 	profile = { height = 20, width = 30, dist = 2, skip = 8, max = 10, font = "Fonts\\FRIZQT__.TTF", font_size = 14, current_color = {1, 1, 1, 1}, color = {.7, .7, .7, .5} },
@@ -224,8 +224,10 @@ function MainFrame:PickupSpell(nr, icons)
 	end
 	if name then
 		local slot = GuiBarHero.Utils:FindSpell(name)
-		local _, spell_id = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL)
-		PickupSpell(spell_id)
+		if slot then
+			local _, spell_id = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL)
+			PickupSpell(spell_id)
+		end
 	end
 end
 
@@ -256,9 +258,8 @@ function MainFrame:Hide()
 end
 
 function MainFrame:RefreshBars()
-	local icons_on_top = GuiBarHero.settings:GetIconsOnTop()
-	self:RefreshProfileFrame(not icons_on_top)
-	self:RefreshIconFrame(icons_on_top)
+	self:RefreshProfileFrame()
+	self:RefreshIconFrame()
 	if self.gcd then
 		self.gcd:Release()
 	end
@@ -267,26 +268,18 @@ function MainFrame:RefreshBars()
 	self:SetBars(GuiBarHero.settings:GetIcons(), true)
 end
 
-function MainFrame:RefreshProfileFrame(on_top)
+function MainFrame:RefreshProfileFrame()
 	self.profile_frame:ClearAllPoints()
-	if on_top then
-		self.profile_frame:SetPoint("TOPLEFT", LAYOUT.main.border, LAYOUT.profile.dist + LAYOUT.profile.height)
-	else
-		self.profile_frame:SetPoint("BOTTOMLEFT", LAYOUT.main.border, - LAYOUT.profile.dist - LAYOUT.profile.height)
-	end
+	self.profile_frame:SetPoint("BOTTOMLEFT", LAYOUT.main.border, - LAYOUT.profile.dist - LAYOUT.profile.height)
 	for i = 1, LAYOUT.profile.max do
 		self.profile_buttons[i]:SetTextColor(unpack(LAYOUT.profile.color))
 	end
 	self.profile_buttons[GuiBarHero.settings:GetCurrentProfile()]:SetTextColor(unpack(LAYOUT.profile.current_color))
 end
 
-function MainFrame:RefreshIconFrame(on_top)
+function MainFrame:RefreshIconFrame()
 	self.icon_frame:ClearAllPoints()
-	if on_top then
-		self.icon_frame:SetPoint("TOPLEFT", LAYOUT.main.border, LAYOUT.large_icon.dist + LAYOUT.large_icon.height)
-	else
-		self.icon_frame:SetPoint("BOTTOMLEFT", LAYOUT.main.border, - LAYOUT.large_icon.dist - LAYOUT.large_icon.height)
-	end
+	self.icon_frame:SetPoint("TOPLEFT", LAYOUT.main.border, LAYOUT.large_icon.dist + LAYOUT.large_icon.height)
 end
 
 function MainFrame:SetBars(spells, icons)

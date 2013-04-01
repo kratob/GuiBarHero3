@@ -15,7 +15,6 @@ function Settings:Defaults()
 			profiles = { { bars = {}, icons = {} } },
 			current_profile = 1,
 			shown = true,
-			icons_on_top = false,
 		},
 	}
 end
@@ -44,20 +43,12 @@ function Settings:SetCurrentProfile(nr)
 	self.database.current_profile = nr
 end
 
-function Settings:GetIconsOnTop()
-	return self.database.icons_on_top
-end
-
 function Settings:GetShown()
 	return self.database.shown
 end
 
 function Settings:SetShown(shown)
 	self.database.shown = shown
-end
-
-function Settings:SetIconsOnTop(icons_on_top)
-	self.database.icons_on_top = icons_on_top
 end
 
 function Settings:GetBars()

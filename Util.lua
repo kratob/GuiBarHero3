@@ -17,9 +17,9 @@ end
 function Utils:FindSpell(name)
 	name = string.lower(name)
 	if name == "trinket 1" then 
-		return "Trinket 1", "Trinket 1"
+		return nil, "Trinket 1"
 	elseif name == "trinket 2" then
-		return "Trinket 2", "Trinket 2"
+		return nil, "Trinket 2"
 	end
 	local slot_id = 1
 	for slot_id = 1, self:GetNumSpellBookItems() do
