@@ -1,4 +1,4 @@
-local EPS = { time = 0.1 }
+local EPS = { time = 0.2 }
 
 local Spell = {}
 local Spell_mt = { __index = Spell }
@@ -76,6 +76,7 @@ function Spell:UpdateDebuff(event, unit)
 	if (not UnitExists("target")) or UnitIsDead("target") or UnitIsFriend("player", "target") then
 		self.bar_start = nil
 		self.bar_end = nil
+		self.icon_text = nil
 		return
 	end
 
@@ -93,6 +94,7 @@ end
 function Spell:UpdateBuff(get_buff)
 	local latest_expire, count = self:BuffEnd(get_buff)
 	local found = latest_expire
+	local last_bar_start = self.bar_start or 0
 	if not found then
 		self.bar_start = nil
 		self.bar_end = nil
@@ -123,6 +125,8 @@ function Spell:UpdateBuff(get_buff)
 	if (not found) and (not self.bar_start or self.bar_start > GetTime() + EPS.time) then
 		self.bar_start = 0
 	end
+
+	self:ShowBuffOrDebuff(last_bar_start)
 
 	if self.spell_info.show_stack_count and count and not found then
 		self.icon_text = "" .. count
@@ -198,7 +202,6 @@ function Spell:UpdateCooldown(event, unit)
 		end
 	end
 
-
 	local spell, _, _, _, _, endTime = UnitCastingInfo("player")
 	if endTime and endTime > self.bar_start * 1000 then
 		self.bar_start = endTime / 1000
@@ -211,16 +214,6 @@ function Spell:UpdateCooldown(event, unit)
 		else
 			self.bar_start = nil
 			self.bar_end = nil
-		end
-	end
-
-	if self.spell_info.show_debuff then
-		local expires = self:BuffEnd(self.GetDebuff, true)
-		if expires then
-			self.bar_start = nil
-			self.bar_end = expires
-		elseif last_bar_start > GetTime() - EPS.time then
-			self.bar_start = last_bar_start
 		end
 	end
 
@@ -246,6 +239,25 @@ function Spell:UpdateCooldown(event, unit)
 			self.icon_text = "" .. count
 		end
 	end
+
+	self:ShowBuffOrDebuff(last_bar_start)
+end
+
+function Spell:ShowBuffOrDebuff(last_bar_start)
+	if self.spell_info.show_debuff or self.spell_info.show_buff then
+		local expires
+		if self.spell_info.show_debuff then
+			expires = self:BuffEnd(self.GetDebuff, true)
+		else
+			expires = self:BuffEnd(self.GetBuff)
+		end
+		if expires then
+			self.bar_start = nil
+			self.bar_end = expires
+		elseif last_bar_start > GetTime() - EPS.time then
+			self.bar_start = last_bar_start
+		end
+	end
 end
 
 function Spell:ValidTarget()
@@ -265,11 +277,33 @@ Spell.update_slot_item_events = { "BAG_UPDATE_COOLDOWN", "UNIT_INVENTORY_CHANGED
 function Spell:UpdateSlotItem(event, unit)
 	if event == "UNIT_INVENTORY_CHANGED" and unit ~= "player" then return end
 	self = self.owner_spell
+	local last_bar_start = self.bar_start or 0
 	local start, duration, enable = GetInventoryItemCooldown("player", self.spell_info.slot_id)
 	if enable == 1 then
 		if duration > 0 then
-			self.bar_start = start + duration
-		else
+			local expires, buff_texture
+			local item_id = GetInventoryItemID("player", self.spell_info.slot_id)
+			local name, _, _, _, _, _, _, _, _, item_texture = GetItemInfo(item_id)
+			_, _, _, _, _, _, expires = UnitBuff("player", name)
+			if not expires then
+				-- attempt to guess by texture
+				for i = 1, 40 do
+					_, _, buff_texture, _, _, _, expires = UnitBuff("player", i)
+					if (not buff_texture) or buff_texture == item_texture then
+						break
+					end
+				end
+			end
+
+			if expires then
+				self.bar_start = nil
+				self.bar_end = expires
+			elseif last_bar_start > GetTime() - EPS.time then
+				self.bar_start = last_bar_start
+			else
+				self.bar_start = start + duration
+			end
+		elseif last_bar_start > GetTime() + EPS.time then
 			self.bar_start = 0
 		end
 	else

@@ -52,27 +52,32 @@ Config.template = {
 		color = {1, 0.3, 0},
 		subtract_cast_time = true,
 	},
-	debuff = function(count, shared) 
+	debuff = function(count, shared, show) 
 		return { type = "DEBUFF",
 			note = count and "LEFT" or "CENTER",
 			color = Colors.green,
 			stacks = count or 0,
 			shared_buffs = shared or {},
 			show_stack_count = count,
+			show_debuff = show, 
 		}
 	end,
-	melee = function(rage) return {
-		type = "COOLDOWN",
-		note = "RIGHT",
-		color = { 1, 1, 1 },
-		need_target = true,
-		min_rage = rage,
-	} end,
+	melee = function(rage) 
+		return {
+			type = "COOLDOWN",
+			note = "RIGHT",
+			color = { 1, 1, 1 },
+			need_target = true,
+			min_rage = rage,
+		} 
+	end,
 	slot_item = function(slot_name)
-		return { type = "SLOTITEM",
+		return { 
+			type = "SLOTITEM",
 			note = "RIGHT",
 			color = Colors.lightblue,
-			slot_id = GetInventorySlotInfo(slot_name) }
+			slot_id = GetInventorySlotInfo(slot_name),
+		}
 	end,
 }
 
@@ -172,6 +177,12 @@ Config.spells = {
 		note = "RIGHT",
 		color = Colors.orange,
 	},
+	["Shield Wall"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = Colors.blue,
+		show_buff = true,
+	},
 	["Wild Strike"] = {
 		{
 			type = "COOLDOWN",
@@ -186,7 +197,7 @@ Config.spells = {
 			min_rage = 80,
 		},
 	},
-	["Demoralizing Shout"] = Config.template.debuff(nil, {"Demoralizing Roar"}),
+	["Demoralizing Shout"] = Config.template.debuff(nil, {"Demoralizing Roar"}, true),
 	["Hamstring"] = Config.template.debuff(),
 	["Thunder Clap"] = { Config.template.debuff(nil, {"Weakened Blows", "Frost Fever"}), Config.template.instant_aoe },
 	["Sunder Armor"] = Config.template.debuff(3, {"Weakened Armor"}),
@@ -227,6 +238,7 @@ Config.spells = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = { 0.5, 0.5, 1 },
+		show_buff = true,
 	},
 	["Berserker Rage"] = {
 		type = "COOLDOWN",
@@ -244,11 +256,13 @@ Config.spells = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = Colors.violet,
+		show_buff = true,
 	},
 	["Bloodbath"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = Colors.violet,
+		show_buff = true,
 	},
 	["Disarm"] = Config.template.attack,
 	["Demoralizing Banner"] = {
