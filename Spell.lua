@@ -272,12 +272,13 @@ function Spell:ValidTarget()
 	return true
 end
 
-Spell.update_slot_item_events = { "BAG_UPDATE_COOLDOWN", "UNIT_INVENTORY_CHANGED" }
+Spell.update_slot_item_events = { "BAG_UPDATE_COOLDOWN", "UNIT_INVENTORY_CHANGED", "UNIT_AURA" }
 
 function Spell:UpdateSlotItem(event, unit)
-	if event == "UNIT_INVENTORY_CHANGED" and unit ~= "player" then return end
+	if (event == "UNIT_INVENTORY_CHANGED" or event == "UNIT_AURA") and unit ~= "player" then return end
 	self = self.owner_spell
 	local last_bar_start = self.bar_start or 0
+	self.bar_end = nil
 	local start, duration, enable = GetInventoryItemCooldown("player", self.spell_info.slot_id)
 	if enable == 1 then
 		if duration > 0 then
@@ -295,16 +296,16 @@ function Spell:UpdateSlotItem(event, unit)
 				end
 			end
 
-			if expires then
+			if expires and expires > 0 then
 				self.bar_start = nil
 				self.bar_end = expires
-			elseif last_bar_start > GetTime() - EPS.time then
-				self.bar_start = last_bar_start
 			else
 				self.bar_start = start + duration
 			end
 		elseif last_bar_start > GetTime() + EPS.time then
 			self.bar_start = 0
+		else
+			self.bar_start = last_bar_start
 		end
 	else
 		self.bar_start = nil
