@@ -14,15 +14,6 @@ function Utils:GetNumSpellBookItems()
 	return n
 end
 
-function Utils:FindGcdSpell()
-	for _, gcd_spell in ipairs(GuiBarHero.Config.gcd_spells) do
-		local spell = Utils:FindSpell(gcd_spell)
-		if spell then
-			return spell
-		end
-	end
-end
-
 function Utils:FindSpell(name)
 	name = string.lower(name)
 	if name == "trinket 1" then 
@@ -41,5 +32,13 @@ function Utils:FindSpell(name)
 	return nil
 end
 
+function Utils:FindFirstSpell(spells)
+	for _, spell in ipairs(spells) do
+		local slot, name = Utils:FindSpell(spell)
+		if slot then
+			return slot, name
+		end
+	end
+end
 
 GuiBarHero.Utils = Utils

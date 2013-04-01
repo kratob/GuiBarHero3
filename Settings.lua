@@ -70,7 +70,7 @@ end
 
 function Settings:InsertBar(nr, spell_name)
 	local bars = self:GetBars()
-	local slot, full_name = GuiBarHero.Utils.FindSpell(spell_name)
+	local slot, full_name = GuiBarHero.Utils:FindSpell(spell_name)
 	if full_name and nr > 0 and nr <= #bars + 1 then
 		if bars[nr] and bars[nr].name == full_name then
 			bars[nr].alt = (bars[nr].alt or 1) + 1
@@ -89,7 +89,7 @@ end
 
 function Settings:SetIcon(nr, spell_name)
 	local icons = self:GetIcons()
-	local slot, full_name = GuiBarHero.Utils.FindSpell(spell_name)
+	local slot, full_name = GuiBarHero.Utils:FindSpell(spell_name)
 	if full_name and nr > 0 then
 		if icons[nr] and icons[nr].name == full_name then
 			icons[nr].alt = (icons[nr].alt or 1) + 1

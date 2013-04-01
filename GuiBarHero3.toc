@@ -16,5 +16,5 @@ Config.lua
 Settings.lua
 Util.lua
 Ui.lua
+Gcd.lua
 Spell.lua
-Tests.lua
