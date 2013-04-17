@@ -40,6 +40,8 @@ function MainFrame:Initialize()
 
 	self.current_bars = {}
 	self.current_icons = {}
+
+	self.event_registry = GuiBarHero.EventRegistry:Create(self.frame)
 end
 
 function MainFrame:CreateFrame()
@@ -300,7 +302,7 @@ function MainFrame:SetBars(spells, icons)
 		if spells[i] then
 			local slot, name = GuiBarHero.Utils:FindSpell(spells[i].name)
 			if name then 
-				local new_bar = Bar:Aquire(frame, icons)
+				local new_bar = Bar:Aquire(frame, icons, self.event_registry)
 				if icons then
 					new_bar:SetIconPosition((i - 1) * (LAYOUT.large_icon.width + LAYOUT.large_icon.skip), 0, LAYOUT.large_icon.width, LAYOUT.large_icon.height)
 				else
@@ -330,6 +332,7 @@ end
 
 function MainFrame:OnUpdate()
 	self = self.owner
+	self.event_registry:Run()
 	self:DrawGcd()
 	for _, bar in pairs(self.current_bars) do
 		bar:Draw()
@@ -359,7 +362,7 @@ end
 -------
 -- Bars
 
-function Bar:Aquire(frame, icon_only)
+function Bar:Aquire(frame, icon_only, event_registry)
 	local pool
 	if icon_only then
 		self.icon_pool = self.icon_pool or {}
@@ -370,7 +373,7 @@ function Bar:Aquire(frame, icon_only)
 	end
 	local bar = table.remove(pool)
 	if not bar then
-		bar = Bar:Create(frame, icon_only)
+		bar = Bar:Create(frame, icon_only, event_registry)
 	end
 	return bar
 end
@@ -387,15 +390,16 @@ function Bar:Release()
 	end
 end
 
-function Bar:Create(parent, icon_only)
+function Bar:Create(parent, icon_only, event_registry)
 	local bar = {} 
 	setmetatable(bar, Bar_mt)
-	bar:Initialize(parent, icon_only)
+	bar:Initialize(parent, icon_only, event_registry)
 
 	return bar
 end
 
-function Bar:Initialize(parent, icon_only)
+function Bar:Initialize(parent, icon_only, event_registry)
+	self.event_registry = event_registry
 	self.icon_only = icon_only
 	self.note_type = LAYOUT.center_note
 	self.next_note = 0
@@ -515,7 +519,7 @@ function Bar:SetIconPosition(x, y, width, height)
 end
 
 function Bar:SetSpell(spell)
-	self.spell = GuiBarHero.Spell:Create(spell.name, spell.alt, self.icon_frame)
+	self.spell = GuiBarHero.Spell:Create(spell.name, spell.alt, self.event_registry)
 	self.spell_info = self.spell:GetInfo()
 	local note_type = self.spell_info.note
 	if note_type == "LEFT" then

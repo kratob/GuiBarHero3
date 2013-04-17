@@ -4,20 +4,18 @@ local Spell = {}
 local Spell_mt = { __index = Spell }
 
 function Spell:Release()
-	self.frame:UnregisterAllEvents()
-	self.frame:SetScript("OnEvent", nil)
+	self.event_registry:Unregister(self)
 end
 
-function Spell:Create(spell_name, alternative, frame)
+function Spell:Create(spell_name, alternative, event_registry)
 	local spell = {}
 	setmetatable(spell, Spell_mt)
-	spell:Initialize(spell_name, alternative, frame)
+	spell:Initialize(spell_name, alternative, event_registry)
 	return spell
 end
 
-function Spell:Initialize(spell_name, alternative, frame)
-	self.frame = frame
-	frame.owner_spell = self
+function Spell:Initialize(spell_name, alternative, event_registry)
+	self.event_registry = event_registry
 
 	local slot_id, spell_name = GuiBarHero.Utils:FindSpell(spell_name)
 	local spell_info = spell_name and GuiBarHero.Config.spells[spell_name] or GuiBarHero.Config.template.default
@@ -31,10 +29,10 @@ function Spell:Initialize(spell_name, alternative, frame)
 	self.bar_start = 0
 	self.bar_end = nil
 
-	self:AttachHandler()
+	self:Register()
 end
 
-function Spell:AttachHandler()
+function Spell:Register()
 	local handler
 	local events
 	if self.spell_info.type == "COOLDOWN" then
@@ -51,18 +49,16 @@ function Spell:AttachHandler()
 		events = Spell.update_slot_item_events
 	end
 	if handler then
-		self.frame:SetScript("OnEvent", handler)
 		for _, event in pairs(events) do
-			self.frame:RegisterEvent(event)
+			self.event_registry:Register(event, self, handler)
 		end
-		handler(self.frame)
+		handler(self)
 	end
 end
 
 Spell.update_selfbuff_events = { "UNIT_AURA" }
 
 function Spell:UpdateSelfbuff(event_type, unit)
-	self = self.owner_spell
 	if unit and unit ~= "player" then return end
 
 	self:UpdateBuff(self.GetBuff)
@@ -71,7 +67,6 @@ end
 Spell.update_debuff_events = { "UNIT_AURA", "PLAYER_TARGET_CHANGED", "SPELL_UPDATE_COOLDOWN" }
 
 function Spell:UpdateDebuff(event, unit)
-	self = self.owner_spell
 	if event == "UNIT_AURA" and unit ~= "target" then return end
 	if (not UnitExists("target")) or UnitIsDead("target") or UnitIsFriend("player", "target") then
 		self.bar_start = nil
@@ -175,7 +170,6 @@ end
 Spell.update_cooldown_events = { "SPELL_UPDATE_COOLDOWN", "PLAYER_TARGET_CHANGED", "CURRENT_SPELL_CAST_CHANGED", "ACTIONBAR_UPDATE_STATE", "UNIT_AURA" }
 
 function Spell:UpdateCooldown(event, unit)
-	self = self.owner_spell
 	if event == "UNIT_AURA" and unit ~= "target" and unit ~= "player" then return end
 
 	local last_bar_start = self.bar_start or 0
@@ -276,7 +270,6 @@ Spell.update_slot_item_events = { "BAG_UPDATE_COOLDOWN", "UNIT_INVENTORY_CHANGED
 
 function Spell:UpdateSlotItem(event, unit)
 	if (event == "UNIT_INVENTORY_CHANGED" or event == "UNIT_AURA") and unit ~= "player" then return end
-	self = self.owner_spell
 	local last_bar_start = self.bar_start or 0
 	self.bar_end = nil
 	local start, duration, enable = GetInventoryItemCooldown("player", self.spell_info.slot_id)

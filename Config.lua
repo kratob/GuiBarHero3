@@ -60,6 +60,7 @@ Config.template = {
 			shared_buffs = shared or {},
 			show_stack_count = count,
 			show_debuff = show, 
+			needs_target = true,
 		}
 	end,
 	melee = function(rage) 

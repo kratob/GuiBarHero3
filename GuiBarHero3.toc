@@ -15,6 +15,7 @@ Core.lua
 Config.lua
 Settings.lua
 Util.lua
+EventRegistry.lua
 Ui.lua
 Gcd.lua
 Spell.lua
