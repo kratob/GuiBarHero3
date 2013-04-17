@@ -25,7 +25,7 @@ function Spell:Initialize(spell_name, alternative, frame)
 		spell_info = spell_info[((alternative or 1) - 1) % #spell_info + 1]
 	end
 	self.spell_info = spell_info
-	self.spell_name = spell_name
+	self.spell_name = spell_name or "nil"
 	self.slot_id = slot_id
 	self.casting = nil
 	self.bar_start = 0
@@ -140,7 +140,7 @@ function Spell:BuffEnd(get_buff, only_self)
 	local total_count = 0
 	local latest_expire = 0
 	local found = false
-	name, _, _, count, _, _, expires, caster = get_buff("target", self.spell_name)
+	name, _, _, count, _, _, expires, caster = get_buff(self, self.spell_name)
 	if (name and (not only_self or caster == "player")) then
 		total_count = total_count + count
 		if ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks) then
@@ -152,7 +152,7 @@ function Spell:BuffEnd(get_buff, only_self)
 	end
 	if self.spell_info.shared_buffs then
 		for _, shared_debuff in ipairs(self.spell_info.shared_buffs) do
-			name, _, _, count, _, _, expires, caster = get_buff("target", shared_debuff)
+			name, _, _, count, _, _, expires, caster = get_buff(self, shared_debuff)
 			if (name and (not only_self or caster == "player")) then
 				total_count = total_count + count
                 if ((not self.spell_info.stacks) or (not count) or count >= self.spell_info.stacks) then

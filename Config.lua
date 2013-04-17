@@ -107,7 +107,7 @@ Config.spells = {
 
 	["Victory Rush"] = Config.template.attack,
 	["Battle Shout"] = {
-		Config.template.self_buff({"Horn of Winter", "Roar of Courage"}),
+		Config.template.self_buff({"Horn of Winter", "Roar of Courage", "Trueshot Aura"}),
 		{
 			type = "COOLDOWN",
 			note = "RIGHT",
@@ -189,6 +189,7 @@ Config.spells = {
 			note = "RIGHT",
 			color = Colors.red,
 			need_aura = "Bloodsurge",
+			show_buff_count = "Bloodsurge",
 		},
 		{
 			type = "COOLDOWN",
