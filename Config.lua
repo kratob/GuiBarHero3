@@ -92,7 +92,13 @@ Config.spells = {
 		color = Colors.red,
 		need_target = true,
 	},
-	["Whirlwind"] = Config.template.attack,
+	["Whirlwind"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = Colors.red,
+		need_target = true,
+		show_buff_count = "Meat Cleaver",
+	},
 	["Execute"] = Config.template.reactive,
 	["Overpower"] = Config.template.reactive,
 	["Mortal Strike"] = {
@@ -128,7 +134,7 @@ Config.spells = {
 	["Devastate"] = Config.template.attack,
 	["Revenge"] = Config.template.attack,
 	["Shield Slam"] = Config.template.attack,
-	["Bladestorm"] = Config.template.attack,
+	["Bladestorm"] = Config.template.instant_aoe,
 	["Shockwave"] = Config.template.instant_aoe,
 	["Concussion Blow"] = Config.template.attack,
 	["Sweeping Strikes"] = {
@@ -151,9 +157,7 @@ Config.spells = {
 	["Recklessness"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
-		color = Colors.orange,
-		need_target = true,
-		need_boss = true,
+		color = Colors.violet,
 	},
 	["Rampage"] = {
 		type = "SELFBUFF",
@@ -189,14 +193,10 @@ Config.spells = {
 			type = "COOLDOWN",
 			note = "RIGHT",
 			color = Colors.red,
-			need_aura = "Bloodsurge",
+			min_rage = 55,
+			need_target = true,
 			show_buff_count = "Bloodsurge",
-		},
-		{
-			type = "COOLDOWN",
-			note = "RIGHT",
-			color = Colors.red,
-			min_rage = 80,
+			also_lit_on_aura = "Bloodsurge"
 		},
 	},
 	["Demoralizing Shout"] = Config.template.debuff(nil, {"Demoralizing Roar"}, true),
@@ -227,6 +227,7 @@ Config.spells = {
 		color = Colors.red,
 		need_target = true,
 		show_buff_count = "Raging Blow!",
+		need_aura = "Raging Blow!",
 	},
 	["Dragon Roar"] = Config.template.instant_aoe,
 	["Colossus Smash"] = {
@@ -250,6 +251,11 @@ Config.spells = {
 	},
 	["Inner Rage"] = Config.template.reactive,
 	["Skull Banner"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = Colors.violet,
+	},
+	["Storm Bolt"] = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = Colors.violet,
