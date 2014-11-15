@@ -342,6 +342,13 @@ function Spell:IsDimmed(bar_start)
 		end
 	end
 
+	if self.spell_info.also_lit_on_aura then
+		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.also_lit_on_aura)
+		if name then
+			dimmed = false
+		end
+	end
+
 	return dimmed
 end
 
