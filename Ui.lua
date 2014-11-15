@@ -235,10 +235,12 @@ end
 
 function MainFrame:OnMouseDown(button)
 	if button == "LeftButton" then
-		if (not self:IsMovable()) and IsAltKeyDown() then
+		if (not self.moving) and IsAltKeyDown() then
+			self.moving = true
 			self:SetMovable(1)
 			self:StartMoving()
 		else
+			self.moving = false
 			self:SetMovable(0)
 			self:StopMovingOrSizing()
 			local l_rel_1, _, l_rel_2, l_x, l_y = self:GetPoint(1)
