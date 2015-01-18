@@ -28,6 +28,8 @@ function Spell:Initialize(spell_name, alternative, event_registry)
 	self.casting = nil
 	self.bar_start = 0
 	self.bar_end = nil
+	self.dim_start = nil
+	self.dim_end = nil
 
 	self:Register()
 end
@@ -310,53 +312,61 @@ function Spell:GetStatus()
 	local bar_start = self.bar_start
 	local bar_end = self.bar_end
 
-	local dimmed = self:IsDimmed(bar_start)
+	self:UpdateDimInfo(bar_start)
+	local dim_start, dim_end = self.dim_start, self.dim_end
 
 	if bar_end and not bar_start then
 		bar_start = 0
-		dimmed = true
+		dim_start = 0
+		dim_end = nil
 	end
 
-	return dimmed, hidden, bar_start, bar_end, self.icon_text
+	return dim_start, dim_end, hidden, bar_start, bar_end, self.icon_text
 end
 
-function Spell:IsDimmed(bar_start)
-	local dimmed = false
+function Spell:UpdateDimInfo(bar_start)
+	local dim_start = nil
+	local dim_end = nil
 
 	if (self.slot_id and (not IsUsableSpell(self.spell_name)) or (SpellHasRange(self.spell_name) and IsSpellInRange(self.spell_name, "target") == 0)) then
-		dimmed = true
+		dim_start = bar_start
 	end
 
 	if self.spell_info.min_rage and UnitMana("player") < self.spell_info.min_rage then
-		dimmed = true
+		dim_start = bar_start
 	end
 
 	if self.spell_info.max_rage and UnitMana("player") > self.spell_info.max_rage then
-		dimmed = true
+		dim_start = bar_start
 	end
 
 	if self.spell_info.dim_on_enrage and bar_start then
 		local enrage_end = self:EnrageEnd()
-		if enrage_end and enrage_end > bar_start then
-			dimmed = true
+		if enrage_end then
+			dim_end = enrage_end
+		else
+			dim_end = self.dim_end
 		end
 	end
 
-	if self.spell_info.dim_unless_enrage and bar_start then
+	if self.spell_info.dim_unless_enrage and bar_start and not dim_end then
 		local enrage_end = self:EnrageEnd()
-		if (not enrage_end) or enrage_end <= bar_start then
-			dimmed = true
+		if enrage_end then
+			dim_start = enrage_end
+		else
+			dim_start = self.dim_start
 		end
 	end
 
 	if self.spell_info.also_lit_on_aura then
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.also_lit_on_aura)
 		if name then
-			dimmed = false
+			dim_start = nil
 		end
 	end
 
-	return dimmed
+	self.dim_start = dim_start
+	self.dim_end = dim_end
 end
 
 function Spell:EnrageEnd()

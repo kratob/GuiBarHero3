@@ -447,10 +447,14 @@ function Bar:CreateBarTextures()
 	local tex = self.frame:CreateTexture("Chord")
 	tex:SetTexture(LAYOUT.chord.path, true)
 	tex:SetBlendMode("BLEND")
-	local r,g,b = unpack(self.spell_info.color)
 	tex:SetDrawLayer("ARTWORK")
-	tex:SetVertexColor(r, g, b, LAYOUT.chord.alpha)
 	self.chord_tex = tex
+
+	tex = self.frame:CreateTexture("Chord dimmed")
+	tex:SetTexture(LAYOUT.chord.path, true)
+	tex:SetBlendMode("BLEND")
+	tex:SetDrawLayer("ARTWORK")
+	self.dimmed_chord_tex = tex
 
 	self.note_tex = self.frame:CreateTexture("Note")
 end
@@ -467,8 +471,12 @@ function Bar:CreateFont()
 end
 
 function Bar:RefreshBar()
+	local r,g,b = unpack(self.spell_info.color)
 	self.chord_width = math.ceil(LAYOUT.chord.width * self.height / LAYOUT.chord.height)
 	self.chord_tex:SetHeight(self.height)
+	self.chord_tex:SetVertexColor(r, g, b, LAYOUT.chord.alpha)
+	self.dimmed_chord_tex:SetHeight(self.height)
+	self.dimmed_chord_tex:SetVertexColor(r, g, b, LAYOUT.chord.alpha * LAYOUT.bar.dim_alpha)
 
 	local scale = self.height / self.note_type.height
 	self.note_offset = self.note_type.offset * scale
@@ -540,21 +548,50 @@ end
 
 function Bar:Draw()
 	local time = GetTime()
-	local dimmed, hidden, bar_start, bar_end, icon_text = self.spell:GetStatus()
+	local dim_start, dim_end, hidden, bar_start, bar_end, icon_text = self.spell:GetStatus()
 	if self.icon_only then
-		dimmed = dimmed or (not bar_start) or bar_start > time or hidden
+		local dimmed = (not bar_start) or (dim_start and dim_start <= time) or (dim_end and dim_end > time) or bar_start > time or hidden
 		self.icon_tex:SetVertexColor(1, 1, 1, dimmed and LAYOUT.large_icon.dim_alpha or LAYOUT.large_icon.alpha )
 	else
 		if (not bar_start) or hidden or (bar_end and (bar_end < bar_start)) then
-			self:DrawEmpty()
+			self:DrawEmpty(false)
+			self:DrawEmpty(true)
 		else
-			local x = (bar_start - time) * LAYOUT.bar.speed + LAYOUT.bridge.x
-			local x2 = nil
+			local note_x = (bar_start - time) * LAYOUT.bar.speed + LAYOUT.bridge.x
+			local x = note_x
+			if x <= 0 then
+				x = 0
+			end
+			local x2 = self.width
+			local x_dim_start = dim_start and (dim_start - time) * LAYOUT.bar.speed + LAYOUT.bridge.x
+			local x_dim_end = dim_end and (dim_end - time) * LAYOUT.bar.speed + LAYOUT.bridge.x
 			if bar_end then
 				x2 = (bar_end - time) * LAYOUT.bar.speed + LAYOUT.bridge.x
+				if x2 > self.width then
+					x2 = self.width
+				end
 			end
-			self:DrawChord(x > 0 and x or 0, x2, dimmed)
-			self:DrawNote(x, false, dimmed)
+			if x_dim_start and x_dim_start > x and x_dim_start < x2 then
+				-- second half dimmed
+				self:DrawChord(x, x_dim_start, false)
+				self:DrawChord(x_dim_start, x2, true)
+				self:DrawNote(note_x, false)
+			elseif x_dim_end and x_dim_end > x and x_dim_end < x2 then
+				-- first half dimmed
+				self:DrawChord(x, x_dim_end, true)
+				self:DrawChord(x_dim_end, x2, false)
+				self:DrawNote(note_x, true)
+			elseif (x_dim_start and x_dim_start <= x) or (x_dim_end and x_dim_end >= x2) then
+				-- totally dimmed
+				self:DrawChord(x, x2, true)
+				self:DrawEmpty(false)
+				self:DrawNote(note_x, true)
+			else
+				-- not dimmed at all
+				self:DrawChord(x, x2, false)
+				self:DrawEmpty(true)
+				self:DrawNote(note_x, false)
+			end
 		end
 	end
 	if icon_text then
@@ -565,31 +602,35 @@ function Bar:Draw()
 	end
 end
 
-function Bar:DrawEmpty()
-	if self.chord_tex then
-		self.chord_tex:Hide()
-	end
-	if self.note_tex then
-		self.note_tex:Hide()
+function Bar:DrawEmpty(dimmed)
+	if dimmed then
+		if self.dimmed_chord_tex then
+			self.dimmed_chord_tex:Hide()
+		end
+	else
+		if self.chord_tex then
+			self.chord_tex:Hide()
+		end
+		if self.note_tex then
+			self.note_tex:Hide()
+		end
 	end
 end
 
 function Bar:DrawChord(start, stop, dimmed)
-	local r,g,b = unpack(self.spell_info.color)
-	local alpha = LAYOUT.chord.alpha
-	if dimmed then alpha = alpha * LAYOUT.bar.dim_alpha end
 	local w = self.chord_width
 	local offset = (GetTime() * LAYOUT.bar.speed) % w
-	if (not stop) or stop > self.width then
-		stop = self.width
-	end
 	local visible_width = stop - start
-	local tex = self.chord_tex
+	local tex = nil
+	if dimmed then
+		tex = self.dimmed_chord_tex
+	else
+		tex = self.chord_tex
+	end
 	if visible_width > 0 then
 		tex:SetPoint("TOPLEFT", start, 0)
 		tex:SetWidth(visible_width)
 		tex:SetTexCoord((start + offset) / w, (stop + offset) / w, 0, 1)
-		tex:SetVertexColor(r,g,b,alpha)
 		tex:Show()
 	else
 		tex:Hide()
