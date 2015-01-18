@@ -25,7 +25,11 @@ end
 function Gcd:OnEvent()
 	self = self.owner
 	local start, duration = GetSpellCooldown(self.slot, BOOKTYPE_SPELL)
-	self.next_gcd = start + duration
+	if start and duration then
+		self.next_gcd = start + duration
+	else
+		self.next_gcd = 0
+	end
 end
 
 function Gcd:GetNext()

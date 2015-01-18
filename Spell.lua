@@ -342,6 +342,13 @@ function Spell:IsDimmed(bar_start)
 		end
 	end
 
+	if self.spell_info.dim_unless_enrage and bar_start then
+		local enrage_end = self:EnrageEnd()
+		if (not enrage_end) or enrage_end <= bar_start then
+			dimmed = true
+		end
+	end
+
 	if self.spell_info.also_lit_on_aura then
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.also_lit_on_aura)
 		if name then

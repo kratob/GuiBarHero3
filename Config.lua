@@ -82,7 +82,7 @@ Config.template = {
 	end,
 }
 
-Config.gcd_spells = {"Hamstring", "Shadow Bolt"}
+Config.gcd_spells = {"Wild Strike", "Devastate", "Shadow Bolt"}
 Config.enrage_auras = {"Berserker Rage", "Death Wish", "Enrage"}
 
 Config.spells = {
@@ -158,6 +158,8 @@ Config.spells = {
 		type = "COOLDOWN",
 		note = "RIGHT",
 		color = Colors.violet,
+		show_buff = true,
+		dim_unless_enrage = true,
 	},
 	["Rampage"] = {
 		type = "SELFBUFF",
@@ -193,7 +195,7 @@ Config.spells = {
 			type = "COOLDOWN",
 			note = "RIGHT",
 			color = Colors.red,
-			min_rage = 55,
+			min_rage = 70,
 			need_target = true,
 			show_buff_count = "Bloodsurge",
 			also_lit_on_aura = "Bloodsurge"
@@ -271,6 +273,7 @@ Config.spells = {
 		note = "RIGHT",
 		color = Colors.violet,
 		show_buff = true,
+		dim_unless_enrage = true,
 	},
 	["Disarm"] = Config.template.attack,
 	["Demoralizing Banner"] = {
@@ -279,6 +282,12 @@ Config.spells = {
 		color = Colors.green,
 	},
 	["Pummel"] = Config.template.attack,
+	["Ravager"] = {
+		type = "COOLDOWN",
+		note = "RIGHT",
+		color = Colors.red,
+		show_buff = true,
+	},
 
 	["Shadow Bolt"] = Config.template.attack,
 	["Immolate"] = Config.template.dot,
