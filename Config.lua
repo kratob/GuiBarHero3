@@ -178,6 +178,9 @@ Config.spells = {
 		note = "RIGHT",
 		color = Colors.orange,
 		need_no_aura = "Shield Block",
+		show_charges = true,
+		dim_on_charges = 1,
+		dim = true,
 	},
 	["Shield Barrier"] = {
 		type = "SELFBUFF",
@@ -195,7 +198,7 @@ Config.spells = {
 			type = "COOLDOWN",
 			note = "RIGHT",
 			color = Colors.red,
-			min_rage = 70,
+			min_rage = 55,
 			need_target = true,
 			show_buff_count = "Bloodsurge",
 			also_lit_on_aura = "Bloodsurge"
@@ -269,11 +272,19 @@ Config.spells = {
 		show_buff = true,
 	},
 	["Bloodbath"] = {
-		type = "COOLDOWN",
-		note = "RIGHT",
-		color = Colors.violet,
-		show_buff = true,
-		dim_unless_enrage = true,
+		{
+			type = "COOLDOWN",
+			note = "RIGHT",
+			color = Colors.violet,
+			show_buff = true,
+			dim_unless_enrage = true,
+		},
+		{
+			type = "COOLDOWN",
+			note = "RIGHT",
+			color = Colors.violet,
+			show_buff = true,
+		},
 	},
 	["Disarm"] = Config.template.attack,
 	["Demoralizing Banner"] = {

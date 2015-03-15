@@ -230,9 +230,18 @@ function Spell:UpdateCooldown(event, unit)
 
 	self.icon_text = nil
 	if self.spell_info.show_buff_count then
-		found, _, _, count = UnitBuff("player", self.spell_info.show_buff_count)
+		local found, _, _, count = UnitBuff("player", self.spell_info.show_buff_count)
 		if found then
 			self.icon_text = "" .. count
+		end
+	end
+
+	if self.spell_info.show_charges then
+		local currentCharges, maxCharges, cooldownStart, cooldownDuration = GetSpellCharges(self.spell_name)
+		if currentCharges then
+			self.icon_text = "" .. currentCharges
+		else
+			self.icon_text = ""
 		end
 	end
 
@@ -354,7 +363,11 @@ function Spell:UpdateDimInfo(bar_start)
 		if enrage_end then
 			dim_start = enrage_end
 		else
-			dim_start = self.dim_start
+			if self.dim_start then
+				dim_start = self.dim_start
+			else
+				dim_start = bar_start
+			end
 		end
 	end
 
@@ -362,6 +375,18 @@ function Spell:UpdateDimInfo(bar_start)
 		name, _, _, _, _, _, expires = UnitBuff("player", self.spell_info.also_lit_on_aura)
 		if name then
 			dim_start = nil
+		end
+	end
+
+	if self.spell_info.dim_on_charges then
+		local currentCharges, maxCharges, cooldownStart, cooldownDuration = GetSpellCharges(self.spell_name)
+		if currentCharges then
+			local chargesToLit = self.spell_info.dim_on_charges - currentCharges + 1
+			if chargesToLit > 0 and not dim_start then
+				local chargesReady = cooldownStart + chargesToLit * cooldownDuration
+				dim_start = bar_start
+				dim_end = chargesReady
+			end
 		end
 	end
 
